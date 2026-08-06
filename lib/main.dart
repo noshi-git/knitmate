@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'models/stitch_symbol.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -184,14 +186,7 @@ class _CounterPageState extends State<CounterPage> {
   }
 }
 
-// マスに置ける記号の種類
-enum StitchSymbol {
-  empty, // 空白
-  singleCrochet, // 細編み（×）
-  doubleCrochet, // 長編み（T）
-  trebleCrochet, // 長々編み（T + 横線2本）
-  slipStitch, // 引き抜き編み（●）
-}
+
 
 class PatternEditorPage extends StatefulWidget {
   const PatternEditorPage({super.key});
