@@ -73,10 +73,18 @@ class MyHomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
+              // 「編み図」ボタン → 編み図エディタ画面へ移動
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PatternEditorPage(),
+                      ),
+                    );
+                  },
                   child: const Text('編み図'),
                 ),
               ),
@@ -169,6 +177,57 @@ class _CounterPageState extends State<CounterPage> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PatternEditorPage extends StatelessWidget {
+  const PatternEditorPage({super.key});
+
+  // 試作版グリッドのサイズ（10行 × 10列）
+  static const int gridRows = 10;
+  static const int gridColumns = 10;
+  static const double cellSize = 36;
+
+  // 編み図エディタ画面
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = Theme.of(context).colorScheme.outline;
+
+    return Scaffold(
+      // タイトルバー（← 戻るボタンは自動で表示される）
+      appBar: AppBar(
+        title: const Text('編み図エディタ'),
+      ),
+      body: SafeArea(
+        child: Center(
+          // はみ出す場合は縦横にスクロールできる
+          child: SingleChildScrollView(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: List.generate(gridRows, (row) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(gridColumns, (column) {
+                        return Container(
+                          width: cellSize,
+                          height: cellSize,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: borderColor),
+                          ),
+                        );
+                      }),
+                    );
+                  }),
+                ),
+              ),
+            ),
           ),
         ),
       ),
