@@ -22,11 +22,19 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   // 各マスに配置されている記号
   late List<List<StitchSymbol>> _grid;
 
-  // 最初に選択される記号
+  // 選択中の記号
   StitchSymbol _selectedSymbol = StitchSymbol.singleCrochet;
 
+  // 直前の操作を戻すためのグリッド
+  List<List<StitchSymbol>>? _undoGrid;
+
+  // 現在の操作を始める直前のグリッド
+  List<List<StitchSymbol>>? _gestureStartGrid;
+
+  // 現在の操作で実際にマスを変更したか
+  bool _gestureChanged = false;
+
   // ドラッグ中に最後に変更したマス
-  // 同じマスを何度も更新しないために使用する
   int? _lastEditedRow;
   int? _lastEditedColumn;
 
@@ -43,15 +51,41 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     );
   }
 
-  // 指またはマウスの位置から、対象のマスを求めて編集する
+  // グリッドを完全にコピーする
+  List<List<StitchSymbol>> _copyGrid(
+    List<List<StitchSymbol>> source,
+  ) {
+    return source
+        .map((row) => List<StitchSymbol>.from(row))
+        .toList();
+  }
+
+  // クリックまたはドラッグ操作の開始
+  void _startEditing() {
+    _lastEditedRow = null;
+    _lastEditedColumn = null;
+
+    // 操作開始前の状態を保存する
+    _gestureStartGrid = _copyGrid(_grid);
+    _gestureChanged = false;
+  }
+
+  // クリックまたはドラッグ操作の終了
+  void _finishEditing() {
+    _lastEditedRow = null;
+    _lastEditedColumn = null;
+    _gestureStartGrid = null;
+    _gestureChanged = false;
+  }
+
+  // 指またはマウスの位置から対象マスを求めて編集する
   void _editCellFromPosition(Offset localPosition) {
-    // 段番号と列番号の部分を除いた、グリッド内の座標
     final gridX =
         localPosition.dx - PatternEditorPage.rowNumberWidth;
     final gridY =
         localPosition.dy - PatternEditorPage.columnNumberHeight;
 
-    // 番号部分やグリッド外を操作した場合は何もしない
+    // 段番号・列番号やグリッド外では何もしない
     if (gridX < 0 || gridY < 0) {
       return;
     }
@@ -68,23 +102,48 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
       return;
     }
 
-    // 画面上は10段目から1段目の順なので、
-    // 表示位置を内部データの行番号へ変換する
+    // 表示上の行を、内部データの行番号へ変換
     final row =
         PatternEditorPage.gridRows - 1 - displayRow;
 
-    // ドラッグ中に同じマスへ何度も入った場合は更新しない
+    // 同じマスを連続して更新しない
     if (_lastEditedRow == row &&
         _lastEditedColumn == column) {
       return;
     }
 
-    setState(() {
-      _grid[row][column] = _selectedSymbol;
-    });
-
     _lastEditedRow = row;
     _lastEditedColumn = column;
+
+    // すでに同じ記号なら変更しない
+    if (_grid[row][column] == _selectedSymbol) {
+      return;
+    }
+
+    setState(() {
+      // この操作で最初に変更した時だけ、
+      // 操作開始前の状態をUndo用として保存する
+      if (!_gestureChanged && _gestureStartGrid != null) {
+        _undoGrid = _copyGrid(_gestureStartGrid!);
+        _gestureChanged = true;
+      }
+
+      _grid[row][column] = _selectedSymbol;
+    });
+  }
+
+  // 直前のクリックまたはドラッグ操作を元に戻す
+  void _undo() {
+    if (_undoGrid == null) {
+      return;
+    }
+
+    setState(() {
+      _grid = _copyGrid(_undoGrid!);
+
+      // シンプルUndoなので、戻せるのは1回だけ
+      _undoGrid = null;
+    });
   }
 
   // マス内に編み記号を表示する
@@ -195,7 +254,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     int displayIndex,
     Color borderColor,
   ) {
-    // 内部の0行目を、画面一番下の1段目として表示する
+    // 内部の0行目を画面一番下の1段目として表示
     final row =
         PatternEditorPage.gridRows - 1 - displayIndex;
 
@@ -225,9 +284,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
               width: PatternEditorPage.cellSize,
               height: PatternEditorPage.cellSize,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: borderColor,
-                ),
+                border: Border.all(color: borderColor),
               ),
               alignment: Alignment.center,
               child: _buildSymbolWidget(
@@ -249,6 +306,15 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('編み図エディタ'),
+
+        // 右上の「元に戻す」ボタン
+        actions: [
+          IconButton(
+            onPressed: _undoGrid == null ? null : _undo,
+            icon: const Icon(Icons.undo),
+            tooltip: '元に戻す',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -260,38 +326,31 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                     scrollDirection: Axis.horizontal,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-
-                      // Pointerの位置を取得して、
-                      // クリック入力とドラッグ入力の両方に対応する
                       child: Listener(
                         behavior: HitTestBehavior.opaque,
 
-                        // 押し始めた位置のマスへ入力
+                        // 操作開始
                         onPointerDown: (event) {
-                          _lastEditedRow = null;
-                          _lastEditedColumn = null;
-
+                          _startEditing();
                           _editCellFromPosition(
                             event.localPosition,
                           );
                         },
 
-                        // 押したまま移動した先のマスへ連続入力
+                        // 押したまま移動したマスへ連続入力
                         onPointerMove: (event) {
                           _editCellFromPosition(
                             event.localPosition,
                           );
                         },
 
-                        // 操作終了時に記録をリセット
+                        // 操作終了
                         onPointerUp: (_) {
-                          _lastEditedRow = null;
-                          _lastEditedColumn = null;
+                          _finishEditing();
                         },
 
                         onPointerCancel: (_) {
-                          _lastEditedRow = null;
-                          _lastEditedColumn = null;
+                          _finishEditing();
                         },
 
                         child: Column(
