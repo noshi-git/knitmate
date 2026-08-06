@@ -307,27 +307,45 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
-                        children: List.generate(PatternEditorPage.gridRows, (row) {
+                        children: List.generate(PatternEditorPage.gridRows, (displayIndex) {
+                          // 下から1段目、上へ向かって番号が増える（表示は上から10→1）
+                          final row = PatternEditorPage.gridRows - 1 - displayIndex;
+                          final rowNumber = row + 1;
+
                           return Row(
                             mainAxisSize: MainAxisSize.min,
-                            children:
-                                List.generate(PatternEditorPage.gridColumns, (column) {
-                              return GestureDetector(
-                                onTap: () => _onCellTap(row, column),
-                                child: Container(
-                                  width: PatternEditorPage.cellSize,
-                                  height: PatternEditorPage.cellSize,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: borderColor),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: _buildSymbolWidget(
-                                    context,
-                                    _grid[row][column],
-                                  ),
+                            children: [
+                              // 各行の左側に段番号を表示
+                              SizedBox(
+                                width: 28,
+                                child: Text(
+                                  '$rowNumber',
+                                  textAlign: TextAlign.center,
+                                  style:
+                                      Theme.of(context).textTheme.labelMedium,
                                 ),
-                              );
-                            }),
+                              ),
+                              ...List.generate(
+                                PatternEditorPage.gridColumns,
+                                (column) {
+                                  return GestureDetector(
+                                    onTap: () => _onCellTap(row, column),
+                                    child: Container(
+                                      width: PatternEditorPage.cellSize,
+                                      height: PatternEditorPage.cellSize,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: borderColor),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: _buildSymbolWidget(
+                                        context,
+                                        _grid[row][column],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           );
                         }),
                       ),
