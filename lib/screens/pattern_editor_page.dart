@@ -10,6 +10,9 @@ class PatternEditorPage extends StatefulWidget {
   static const int gridColumns = 10;
   static const double cellSize = 36;
 
+  // 左側の段番号を表示する部分の幅
+  static const double rowNumberWidth = 28;
+
   @override
   State<PatternEditorPage> createState() => _PatternEditorPageState();
 }
@@ -115,9 +118,92 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     );
   }
 
+  // グリッド上部の列番号を作る
+  Widget _buildColumnNumbers(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 左側の段番号と同じ幅だけ空ける
+        const SizedBox(
+          width: PatternEditorPage.rowNumberWidth,
+        ),
+
+        // 左から1〜10の列番号を表示する
+        ...List.generate(
+          PatternEditorPage.gridColumns,
+          (column) {
+            return SizedBox(
+              width: PatternEditorPage.cellSize,
+              height: 28,
+              child: Center(
+                child: Text(
+                  '${column + 1}',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // グリッドの1行を作る
+  Widget _buildGridRow(
+    BuildContext context,
+    int displayIndex,
+    Color borderColor,
+  ) {
+    // 内部の0行目を、画面一番下の1段目として表示する
+    final row =
+        PatternEditorPage.gridRows - 1 - displayIndex;
+
+    final rowNumber = row + 1;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 左側の段番号
+        SizedBox(
+          width: PatternEditorPage.rowNumberWidth,
+          child: Text(
+            '$rowNumber',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+        ),
+
+        // 編み図の各マス
+        ...List.generate(
+          PatternEditorPage.gridColumns,
+          (column) {
+            return GestureDetector(
+              onTap: () => _onCellTap(row, column),
+              child: Container(
+                width: PatternEditorPage.cellSize,
+                height: PatternEditorPage.cellSize,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: borderColor,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: _buildSymbolWidget(
+                  context,
+                  _grid[row][column],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final borderColor = Theme.of(context).colorScheme.outline;
+    final borderColor =
+        Theme.of(context).colorScheme.outline;
 
     return Scaffold(
       appBar: AppBar(
@@ -134,62 +220,23 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
-                        children: List.generate(
-                          PatternEditorPage.gridRows,
-                          (displayIndex) {
-                            // 一番下を1段目として表示する
-                            final row =
-                                PatternEditorPage.gridRows -
-                                1 -
-                                displayIndex;
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // グリッド上部の列番号
+                          _buildColumnNumbers(context),
 
-                            final rowNumber = row + 1;
-
-                            return Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // 左側の段番号
-                                SizedBox(
-                                  width: 28,
-                                  child: Text(
-                                    '$rowNumber',
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelMedium,
-                                  ),
-                                ),
-
-                                // 編み図の各マス
-                                ...List.generate(
-                                  PatternEditorPage.gridColumns,
-                                  (column) {
-                                    return GestureDetector(
-                                      onTap: () =>
-                                          _onCellTap(row, column),
-                                      child: Container(
-                                        width:
-                                            PatternEditorPage.cellSize,
-                                        height:
-                                            PatternEditorPage.cellSize,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: borderColor,
-                                          ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: _buildSymbolWidget(
-                                          context,
-                                          _grid[row][column],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                          // 編み図の各行
+                          ...List.generate(
+                            PatternEditorPage.gridRows,
+                            (displayIndex) {
+                              return _buildGridRow(
+                                context,
+                                displayIndex,
+                                borderColor,
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ),
