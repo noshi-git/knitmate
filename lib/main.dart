@@ -188,6 +188,9 @@ class _CounterPageState extends State<CounterPage> {
 enum StitchSymbol {
   empty, // 空白
   singleCrochet, // 細編み（×）
+  doubleCrochet, // 長編み（T）
+  trebleCrochet, // 長々編み（T + 横線2本）
+  slipStitch, // 引き抜き編み（●）
 }
 
 class PatternEditorPage extends StatefulWidget {
@@ -228,14 +231,58 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     });
   }
 
-  // 記号を画面に表示する文字に変換する
-  String _symbolText(StitchSymbol symbol) {
+  // 記号をマス内に表示するウィジェット
+  Widget _buildSymbolWidget(BuildContext context, StitchSymbol symbol) {
+    final textStyle = Theme.of(context).textTheme.bodyLarge;
+    final lineColor = Theme.of(context).colorScheme.onSurface;
+
     switch (symbol) {
-      case StitchSymbol.singleCrochet:
-        return '×';
       case StitchSymbol.empty:
-        return '';
+        return const SizedBox.shrink();
+      case StitchSymbol.singleCrochet:
+        return Text('×', style: textStyle);
+      case StitchSymbol.doubleCrochet:
+        return Text('T', style: textStyle);
+      case StitchSymbol.trebleCrochet:
+        // T の上に横線を2本（Widget の組み合わせ）
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 12, height: 1.5, color: lineColor),
+            const SizedBox(height: 1),
+            Container(width: 12, height: 1.5, color: lineColor),
+            const SizedBox(height: 1),
+            Text('T', style: Theme.of(context).textTheme.labelSmall),
+          ],
+        );
+      case StitchSymbol.slipStitch:
+        return Text('●', style: textStyle);
     }
+  }
+
+  // 記号選択ボタン（選択中は FilledButton、未選択は OutlinedButton）
+  Widget _buildSymbolButton(StitchSymbol symbol, String label) {
+    final isSelected = _selectedSymbol == symbol;
+
+    if (isSelected) {
+      return FilledButton(
+        onPressed: () {
+          setState(() {
+            _selectedSymbol = symbol;
+          });
+        },
+        child: Text(label),
+      );
+    }
+
+    return OutlinedButton(
+      onPressed: () {
+        setState(() {
+          _selectedSymbol = symbol;
+        });
+      },
+      child: Text(label),
+    );
   }
 
   // 編み図エディタ画面
@@ -274,10 +321,9 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                                     border: Border.all(color: borderColor),
                                   ),
                                   alignment: Alignment.center,
-                                  child: Text(
-                                    _symbolText(_grid[row][column]),
-                                    style:
-                                        Theme.of(context).textTheme.bodyLarge,
+                                  child: _buildSymbolWidget(
+                                    context,
+                                    _grid[row][column],
                                   ),
                                 ),
                               );
@@ -290,51 +336,24 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                 ),
               ),
             ),
-            // 画面下部：置く記号を選ぶボタン
+            // 画面下部：5種類の記号を選ぶボタン（横スクロール対応）
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _selectedSymbol == StitchSymbol.empty
-                        ? FilledButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedSymbol = StitchSymbol.empty;
-                              });
-                            },
-                            child: const Text('空白'),
-                          )
-                        : OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedSymbol = StitchSymbol.empty;
-                              });
-                            },
-                            child: const Text('空白'),
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _selectedSymbol == StitchSymbol.singleCrochet
-                        ? FilledButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedSymbol = StitchSymbol.singleCrochet;
-                              });
-                            },
-                            child: const Text('細編み'),
-                          )
-                        : OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedSymbol = StitchSymbol.singleCrochet;
-                              });
-                            },
-                            child: const Text('細編み'),
-                          ),
-                  ),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildSymbolButton(StitchSymbol.empty, '空白'),
+                    const SizedBox(width: 8),
+                    _buildSymbolButton(StitchSymbol.singleCrochet, '細編み'),
+                    const SizedBox(width: 8),
+                    _buildSymbolButton(StitchSymbol.doubleCrochet, '長編み'),
+                    const SizedBox(width: 8),
+                    _buildSymbolButton(StitchSymbol.trebleCrochet, '長々編み'),
+                    const SizedBox(width: 8),
+                    _buildSymbolButton(StitchSymbol.slipStitch, '引き抜き編み'),
+                  ],
+                ),
               ),
             ),
           ],
