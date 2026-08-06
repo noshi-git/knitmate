@@ -184,13 +184,59 @@ class _CounterPageState extends State<CounterPage> {
   }
 }
 
-class PatternEditorPage extends StatelessWidget {
+// マスに置ける記号の種類
+enum StitchSymbol {
+  empty, // 空白
+  singleCrochet, // 細編み（×）
+}
+
+class PatternEditorPage extends StatefulWidget {
   const PatternEditorPage({super.key});
 
   // 試作版グリッドのサイズ（10行 × 10列）
   static const int gridRows = 10;
   static const int gridColumns = 10;
   static const double cellSize = 36;
+
+  @override
+  State<PatternEditorPage> createState() => _PatternEditorPageState();
+}
+
+class _PatternEditorPageState extends State<PatternEditorPage> {
+  // グリッドの各マスの記号（最初はすべて空白）
+  late List<List<StitchSymbol>> _grid;
+
+  // 選択中の記号（最初は「細編み」）
+  StitchSymbol _selectedSymbol = StitchSymbol.singleCrochet;
+
+  @override
+  void initState() {
+    super.initState();
+    _grid = List.generate(
+      PatternEditorPage.gridRows,
+      (_) => List.generate(
+        PatternEditorPage.gridColumns,
+        (_) => StitchSymbol.empty,
+      ),
+    );
+  }
+
+  // マスをタップしたとき、選択中の記号を設定する
+  void _onCellTap(int row, int column) {
+    setState(() {
+      _grid[row][column] = _selectedSymbol;
+    });
+  }
+
+  // 記号を画面に表示する文字に変換する
+  String _symbolText(StitchSymbol symbol) {
+    switch (symbol) {
+      case StitchSymbol.singleCrochet:
+        return '×';
+      case StitchSymbol.empty:
+        return '';
+    }
+  }
 
   // 編み図エディタ画面
   @override
@@ -203,32 +249,95 @@ class PatternEditorPage extends StatelessWidget {
         title: const Text('編み図エディタ'),
       ),
       body: SafeArea(
-        child: Center(
-          // はみ出す場合は縦横にスクロールできる
-          child: SingleChildScrollView(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: List.generate(gridRows, (row) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(gridColumns, (column) {
-                        return Container(
-                          width: cellSize,
-                          height: cellSize,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: borderColor),
-                          ),
-                        );
-                      }),
-                    );
-                  }),
+        child: Column(
+          children: [
+            // 10×10 グリッド（はみ出す場合は縦横にスクロール）
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: List.generate(PatternEditorPage.gridRows, (row) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children:
+                                List.generate(PatternEditorPage.gridColumns, (column) {
+                              return GestureDetector(
+                                onTap: () => _onCellTap(row, column),
+                                child: Container(
+                                  width: PatternEditorPage.cellSize,
+                                  height: PatternEditorPage.cellSize,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: borderColor),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    _symbolText(_grid[row][column]),
+                                    style:
+                                        Theme.of(context).textTheme.bodyLarge,
+                                  ),
+                                ),
+                              );
+                            }),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+            // 画面下部：置く記号を選ぶボタン
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _selectedSymbol == StitchSymbol.empty
+                        ? FilledButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedSymbol = StitchSymbol.empty;
+                              });
+                            },
+                            child: const Text('空白'),
+                          )
+                        : OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedSymbol = StitchSymbol.empty;
+                              });
+                            },
+                            child: const Text('空白'),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _selectedSymbol == StitchSymbol.singleCrochet
+                        ? FilledButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedSymbol = StitchSymbol.singleCrochet;
+                              });
+                            },
+                            child: const Text('細編み'),
+                          )
+                        : OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedSymbol = StitchSymbol.singleCrochet;
+                              });
+                            },
+                            child: const Text('細編み'),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
