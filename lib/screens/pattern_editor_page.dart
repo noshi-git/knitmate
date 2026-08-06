@@ -10,8 +10,9 @@ class PatternEditorPage extends StatefulWidget {
   static const int gridColumns = 10;
   static const double cellSize = 36;
 
-  // 左側の段番号を表示する部分の幅
+  // 段番号・列番号を表示する部分のサイズ
   static const double rowNumberWidth = 28;
+  static const double columnNumberHeight = 28;
 
   @override
   State<PatternEditorPage> createState() => _PatternEditorPageState();
@@ -23,6 +24,11 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
 
   // 最初に選択される記号
   StitchSymbol _selectedSymbol = StitchSymbol.singleCrochet;
+
+  // ドラッグ中に最後に変更したマス
+  // 同じマスを何度も更新しないために使用する
+  int? _lastEditedRow;
+  int? _lastEditedColumn;
 
   @override
   void initState() {
@@ -37,11 +43,48 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     );
   }
 
-  // マスをタップしたときに記号を配置する
-  void _onCellTap(int row, int column) {
+  // 指またはマウスの位置から、対象のマスを求めて編集する
+  void _editCellFromPosition(Offset localPosition) {
+    // 段番号と列番号の部分を除いた、グリッド内の座標
+    final gridX =
+        localPosition.dx - PatternEditorPage.rowNumberWidth;
+    final gridY =
+        localPosition.dy - PatternEditorPage.columnNumberHeight;
+
+    // 番号部分やグリッド外を操作した場合は何もしない
+    if (gridX < 0 || gridY < 0) {
+      return;
+    }
+
+    final column =
+        (gridX / PatternEditorPage.cellSize).floor();
+    final displayRow =
+        (gridY / PatternEditorPage.cellSize).floor();
+
+    if (column < 0 ||
+        column >= PatternEditorPage.gridColumns ||
+        displayRow < 0 ||
+        displayRow >= PatternEditorPage.gridRows) {
+      return;
+    }
+
+    // 画面上は10段目から1段目の順なので、
+    // 表示位置を内部データの行番号へ変換する
+    final row =
+        PatternEditorPage.gridRows - 1 - displayRow;
+
+    // ドラッグ中に同じマスへ何度も入った場合は更新しない
+    if (_lastEditedRow == row &&
+        _lastEditedColumn == column) {
+      return;
+    }
+
     setState(() {
       _grid[row][column] = _selectedSymbol;
     });
+
+    _lastEditedRow = row;
+    _lastEditedColumn = column;
   }
 
   // マス内に編み記号を表示する
@@ -118,23 +161,21 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     );
   }
 
-  // グリッド上部の列番号を作る
+  // グリッド上部の列番号
   Widget _buildColumnNumbers(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 左側の段番号と同じ幅だけ空ける
         const SizedBox(
           width: PatternEditorPage.rowNumberWidth,
+          height: PatternEditorPage.columnNumberHeight,
         ),
-
-        // 左から1〜10の列番号を表示する
         ...List.generate(
           PatternEditorPage.gridColumns,
           (column) {
             return SizedBox(
               width: PatternEditorPage.cellSize,
-              height: 28,
+              height: PatternEditorPage.columnNumberHeight,
               child: Center(
                 child: Text(
                   '${column + 1}',
@@ -148,7 +189,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     );
   }
 
-  // グリッドの1行を作る
+  // グリッドの1行
   Widget _buildGridRow(
     BuildContext context,
     int displayIndex,
@@ -166,10 +207,13 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
         // 左側の段番号
         SizedBox(
           width: PatternEditorPage.rowNumberWidth,
-          child: Text(
-            '$rowNumber',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelMedium,
+          height: PatternEditorPage.cellSize,
+          child: Center(
+            child: Text(
+              '$rowNumber',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
           ),
         ),
 
@@ -177,21 +221,18 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
         ...List.generate(
           PatternEditorPage.gridColumns,
           (column) {
-            return GestureDetector(
-              onTap: () => _onCellTap(row, column),
-              child: Container(
-                width: PatternEditorPage.cellSize,
-                height: PatternEditorPage.cellSize,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: borderColor,
-                  ),
+            return Container(
+              width: PatternEditorPage.cellSize,
+              height: PatternEditorPage.cellSize,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: borderColor,
                 ),
-                alignment: Alignment.center,
-                child: _buildSymbolWidget(
-                  context,
-                  _grid[row][column],
-                ),
+              ),
+              alignment: Alignment.center,
+              child: _buildSymbolWidget(
+                context,
+                _grid[row][column],
               ),
             );
           },
@@ -219,24 +260,57 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                     scrollDirection: Axis.horizontal,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // グリッド上部の列番号
-                          _buildColumnNumbers(context),
 
-                          // 編み図の各行
-                          ...List.generate(
-                            PatternEditorPage.gridRows,
-                            (displayIndex) {
-                              return _buildGridRow(
-                                context,
-                                displayIndex,
-                                borderColor,
-                              );
-                            },
-                          ),
-                        ],
+                      // Pointerの位置を取得して、
+                      // クリック入力とドラッグ入力の両方に対応する
+                      child: Listener(
+                        behavior: HitTestBehavior.opaque,
+
+                        // 押し始めた位置のマスへ入力
+                        onPointerDown: (event) {
+                          _lastEditedRow = null;
+                          _lastEditedColumn = null;
+
+                          _editCellFromPosition(
+                            event.localPosition,
+                          );
+                        },
+
+                        // 押したまま移動した先のマスへ連続入力
+                        onPointerMove: (event) {
+                          _editCellFromPosition(
+                            event.localPosition,
+                          );
+                        },
+
+                        // 操作終了時に記録をリセット
+                        onPointerUp: (_) {
+                          _lastEditedRow = null;
+                          _lastEditedColumn = null;
+                        },
+
+                        onPointerCancel: (_) {
+                          _lastEditedRow = null;
+                          _lastEditedColumn = null;
+                        },
+
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildColumnNumbers(context),
+
+                            ...List.generate(
+                              PatternEditorPage.gridRows,
+                              (displayIndex) {
+                                return _buildGridRow(
+                                  context,
+                                  displayIndex,
+                                  borderColor,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
