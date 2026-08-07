@@ -144,6 +144,90 @@ class _ProjectListPageState extends State<ProjectListPage> {
     }
   }
 
+  // 作品名変更ダイアログを表示する
+  Future<void> _showRenameDialog(Project project) async {
+    final formKey = GlobalKey<FormState>();
+    var nameText = project.name;
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('作品名を変更'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            initialValue: project.name,
+            autofocus: true,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '作品名を入力してください';
+              }
+              return null;
+            },
+            onChanged: (value) => nameText = value,
+            onFieldSubmitted: (_) {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop(nameText.trim());
+              }
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop(nameText.trim());
+              }
+            },
+            child: const Text('変更'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || newName == null) {
+      return;
+    }
+
+    // 現在と同じ名前なら何もしない
+    if (newName == project.name) {
+      return;
+    }
+
+    await _renameProject(project, newName);
+  }
+
+  // 作品名を変更して一覧を更新する
+  Future<void> _renameProject(Project project, String newName) async {
+    try {
+      final updatedProject = project.copyWith(
+        name: newName,
+        updatedAt: DateTime.now(),
+      );
+      await _storage.saveProject(updatedProject);
+      if (!mounted) {
+        return;
+      }
+      await _loadProjects();
+      if (!mounted) {
+        return;
+      }
+      _showMessage('作品名を変更しました');
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('作品名の変更に失敗しました');
+    }
+  }
+
   // 「新しい作品」ボタン：横（目数）と縦（段数）を入力するダイアログ
   Future<void> _showNewPatternDialog() async {
     final formKey = GlobalKey<FormState>();
@@ -306,11 +390,23 @@ class _ProjectListPageState extends State<ProjectListPage> {
             trailing: PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (value) {
-                if (value == 'delete') {
+                if (value == 'rename') {
+                  _showRenameDialog(project);
+                } else if (value == 'delete') {
                   _confirmDeleteProject(project);
                 }
               },
               itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'rename',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined),
+                      const SizedBox(width: 8),
+                      const Text('名前変更'),
+                    ],
+                  ),
+                ),
                 PopupMenuItem<String>(
                   value: 'delete',
                   child: Row(
