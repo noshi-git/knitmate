@@ -13,6 +13,11 @@ class PatternSize {
   final int columns;
 }
 
+// 編み図サイズの上限（段階的に拡大中）
+// TODO: 最終目標は maxColumns = 200, maxRows = 300
+const int maxColumns = 100;
+const int maxRows = 100;
+
 class ProjectListPage extends StatefulWidget {
   const ProjectListPage({super.key});
 
@@ -254,7 +259,7 @@ class _ProjectListPageState extends State<ProjectListPage> {
                   hintText: '例：20',
                   border: OutlineInputBorder(),
                 ),
-                validator: _validateSize,
+                validator: _validateColumns,
                 onChanged: (value) => columnsText = value,
               ),
               const SizedBox(height: 16),
@@ -267,7 +272,7 @@ class _ProjectListPageState extends State<ProjectListPage> {
                   hintText: '例：30',
                   border: OutlineInputBorder(),
                 ),
-                validator: _validateSize,
+                validator: _validateRows,
                 onChanged: (value) => rowsText = value,
                 onFieldSubmitted: (_) => _finishDialog(
                   dialogContext,
@@ -318,10 +323,21 @@ class _ProjectListPageState extends State<ProjectListPage> {
     await _loadProjects();
   }
 
-  static String? _validateSize(String? value) {
+  static String? _validateColumns(String? value) {
     final number = int.tryParse(value ?? '');
     if (number == null) return '数字を入力してください';
-    if (number < 1 || number > 50) return '現在は1～50で入力してください';
+    if (number < 1 || number > maxColumns) {
+      return '現在は1～$maxColumnsで入力してください';
+    }
+    return null;
+  }
+
+  static String? _validateRows(String? value) {
+    final number = int.tryParse(value ?? '');
+    if (number == null) return '数字を入力してください';
+    if (number < 1 || number > maxRows) {
+      return '現在は1～$maxRowsで入力してください';
+    }
     return null;
   }
 
