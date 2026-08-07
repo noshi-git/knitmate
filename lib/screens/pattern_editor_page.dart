@@ -1,22 +1,21 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/project.dart';
 import '../models/stitch_symbol.dart';
+import '../services/project_storage_service.dart';
 
 class PatternEditorPage extends StatefulWidget {
   const PatternEditorPage({
     super.key,
     required this.initialRows,
     required this.initialColumns,
-    this.loadSavedPatternOnStart = false,
+    this.project,
   })  : assert(initialRows > 0),
         assert(initialColumns > 0);
 
   final int initialRows;
   final int initialColumns;
-  final bool loadSavedPatternOnStart;
+  final Project? project;
 
   static const double cellSize = 36;
   static const double rowNumberWidth = 36;
@@ -27,13 +26,12 @@ class PatternEditorPage extends StatefulWidget {
 }
 
 class _PatternEditorPageState extends State<PatternEditorPage> {
-  static const String _saveKey = 'knitmate_pattern_grid';
-
-  final SharedPreferencesAsync _preferences = SharedPreferencesAsync();
+  final ProjectStorageService _storage = ProjectStorageService();
 
   late int _rows;
   late int _columns;
   late List<List<StitchSymbol>> _grid;
+  Project? _currentProject;
 
   StitchSymbol _selectedSymbol = StitchSymbol.singleCrochet;
   List<List<StitchSymbol>>? _undoGrid;
@@ -46,15 +44,33 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   @override
   void initState() {
     super.initState();
-    _rows = widget.initialRows;
-    _columns = widget.initialColumns;
-    _grid = _createEmptyGrid(_rows, _columns);
 
-    if (widget.loadSavedPatternOnStart) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadPattern();
-      });
+    if (widget.project != null) {
+      // 既存作品を開いた場合はProjectから読み込む
+      _currentProject = widget.project;
+      _rows = widget.project!.rows;
+      _columns = widget.project!.columns;
+      _grid = _gridFromInts(widget.project!.grid);
+    } else {
+      // 新規作品の場合は空のグリッドから開始
+      _rows = widget.initialRows;
+      _columns = widget.initialColumns;
+      _grid = _createEmptyGrid(_rows, _columns);
     }
+  }
+
+  List<List<StitchSymbol>> _gridFromInts(List<List<int>> grid) {
+    return grid
+        .map(
+          (row) => row.map((value) => StitchSymbol.values[value]).toList(),
+        )
+        .toList();
+  }
+
+  List<List<int>> _gridToInts() {
+    return _grid
+        .map((row) => row.map((symbol) => symbol.index).toList())
+        .toList();
   }
 
   List<List<StitchSymbol>> _createEmptyGrid(int rows, int columns) {
@@ -135,6 +151,54 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     });
   }
 
+  Future<String?> _showProjectNameDialog() async {
+    final formKey = GlobalKey<FormState>();
+    var nameText = '';
+
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('作品名'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: '例：「バッグ」',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '作品名を入力してください';
+              }
+              return null;
+            },
+            onChanged: (value) => nameText = value,
+            onFieldSubmitted: (_) {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop(nameText.trim());
+              }
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext).pop(nameText.trim());
+              }
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _savePattern() async {
     if (_isSaving) {
       return;
@@ -144,21 +208,53 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
       _isSaving = true;
     });
 
-    final saveData = <String, Object>{
-      'rows': _rows,
-      'columns': _columns,
-      'grid': _grid
-          .map((row) => row.map((symbol) => symbol.index).toList())
-          .toList(),
-    };
-
     try {
-      await _preferences.setString(_saveKey, jsonEncode(saveData));
-      if (!mounted) return;
-      _showMessage('編み図を保存しました');
+      Project projectToSave;
+
+      if (_currentProject == null) {
+        // 新規作品の初回保存：作品名を入力してもらう
+        final name = await _showProjectNameDialog();
+        if (!mounted) {
+          return;
+        }
+        if (name == null) {
+          return;
+        }
+
+        final now = DateTime.now();
+        projectToSave = Project(
+          id: Project.generateId(),
+          name: name,
+          rows: _rows,
+          columns: _columns,
+          grid: _gridToInts(),
+          createdAt: now,
+          updatedAt: now,
+        );
+      } else {
+        // 2回目以降：同じIDのJSONファイルを上書き保存
+        projectToSave = _currentProject!.copyWith(
+          rows: _rows,
+          columns: _columns,
+          grid: _gridToInts(),
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      await _storage.saveProject(projectToSave);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _currentProject = projectToSave;
+      });
+      _showMessage('作品を保存しました');
     } catch (_) {
-      if (!mounted) return;
-      _showMessage('編み図の保存に失敗しました');
+      if (!mounted) {
+        return;
+      }
+      _showMessage('作品の保存に失敗しました');
     } finally {
       if (mounted) {
         setState(() {
@@ -170,68 +266,6 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
 
   void _goBack() {
     Navigator.of(context).pop();
-  }
-
-  Future<void> _loadPattern() async {
-    try {
-      final jsonText = await _preferences.getString(_saveKey);
-      if (!mounted) return;
-
-      if (jsonText == null) {
-        _showMessage('保存されている編み図がありません');
-        return;
-      }
-
-      final decoded = jsonDecode(jsonText);
-      if (decoded is! Map<String, dynamic>) {
-        throw const FormatException('Invalid saved pattern');
-      }
-
-      final rows = decoded['rows'];
-      final columns = decoded['columns'];
-      final gridData = decoded['grid'];
-
-      if (rows is! int || rows <= 0 || columns is! int || columns <= 0) {
-        throw const FormatException('Invalid grid size');
-      }
-      if (gridData is! List || gridData.length != rows) {
-        throw const FormatException('Invalid row count');
-      }
-
-      final loadedGrid = <List<StitchSymbol>>[];
-      for (final rowData in gridData) {
-        if (rowData is! List || rowData.length != columns) {
-          throw const FormatException('Invalid column count');
-        }
-
-        final loadedRow = <StitchSymbol>[];
-        for (final value in rowData) {
-          if (value is! int ||
-              value < 0 ||
-              value >= StitchSymbol.values.length) {
-            throw const FormatException('Invalid stitch symbol');
-          }
-          loadedRow.add(StitchSymbol.values[value]);
-        }
-        loadedGrid.add(loadedRow);
-      }
-
-      setState(() {
-        _rows = rows;
-        _columns = columns;
-        _grid = loadedGrid;
-        _undoGrid = null;
-        _gestureStartGrid = null;
-        _gestureChanged = false;
-        _lastEditedRow = null;
-        _lastEditedColumn = null;
-      });
-
-      _showMessage('編み図を読み込みました');
-    } catch (_) {
-      if (!mounted) return;
-      _showMessage('編み図の読み込みに失敗しました');
-    }
   }
 
   void _showMessage(String message) {
@@ -365,11 +399,6 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                   )
                 : const Icon(Icons.save_outlined),
             label: Text(_isSaving ? '保存中' : '保存'),
-          ),
-          IconButton(
-            onPressed: _loadPattern,
-            icon: const Icon(Icons.folder_open_outlined),
-            tooltip: '読み込み',
           ),
           IconButton(
             onPressed: _undoGrid == null ? null : _undo,
