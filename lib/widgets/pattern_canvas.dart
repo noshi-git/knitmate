@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/stitch_symbol.dart';
 import '../painters/pattern_column_header_painter.dart';
@@ -16,9 +18,12 @@ class PatternCanvas extends StatefulWidget {
     required this.rowNumberWidth,
     required this.columnNumberHeight,
     required this.theme,
+    this.zoom = 1.0,
     required this.onCellEdit,
     this.onEditStart,
     this.onEditEnd,
+    this.onZoomIn,
+    this.onZoomOut,
   });
 
   final int rows;
@@ -28,9 +33,12 @@ class PatternCanvas extends StatefulWidget {
   final double rowNumberWidth;
   final double columnNumberHeight;
   final ThemeData theme;
+  final double zoom;
   final void Function(int row, int column) onCellEdit;
   final VoidCallback? onEditStart;
   final VoidCallback? onEditEnd;
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
 
   @override
   State<PatternCanvas> createState() => _PatternCanvasState();
@@ -48,8 +56,11 @@ class _PatternCanvasState extends State<PatternCanvas> {
   int? _lastEditedRow;
   int? _lastEditedColumn;
 
-  double get _gridWidth => widget.columns * widget.cellSize;
-  double get _gridHeight => widget.rows * widget.cellSize;
+  // ズーム後の1マスサイズ
+  double get _scaledCellSize => widget.cellSize * widget.zoom;
+
+  double get _gridWidth => widget.columns * _scaledCellSize;
+  double get _gridHeight => widget.rows * _scaledCellSize;
 
   @override
   void initState() {
@@ -76,6 +87,50 @@ class _PatternCanvasState extends State<PatternCanvas> {
     _verticalGridController.dispose();
     _verticalHeaderController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant PatternCanvas oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.zoom != widget.zoom) {
+      _adjustScrollForZoom(oldWidget.zoom, widget.zoom);
+    }
+  }
+
+  // ズーム変更後も見ている位置を維持するよう、スクロール位置を倍率比で補正
+  void _adjustScrollForZoom(double oldZoom, double newZoom) {
+    if (oldZoom <= 0) {
+      return;
+    }
+
+    final ratio = newZoom / oldZoom;
+    final oldHorizontalOffset = _horizontalGridController.hasClients
+        ? _horizontalGridController.offset
+        : 0.0;
+    final oldVerticalOffset = _verticalGridController.hasClients
+        ? _verticalGridController.offset
+        : 0.0;
+    final newHorizontalOffset = oldHorizontalOffset * ratio;
+    final newVerticalOffset = oldVerticalOffset * ratio;
+
+    // 新しいグリッドサイズ反映後に offset を適用する
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _jumpToClamped(_horizontalGridController, newHorizontalOffset);
+      _jumpToClamped(_verticalGridController, newVerticalOffset);
+    });
+  }
+
+  // スクロール可能範囲内に収めて移動する
+  void _jumpToClamped(ScrollController controller, double offset) {
+    if (!controller.hasClients) {
+      return;
+    }
+
+    final maxOffset = controller.position.maxScrollExtent;
+    controller.jumpTo(offset.clamp(0.0, maxOffset));
   }
 
   // グリッド本体の横スクロール → 列番号へ同期
@@ -149,8 +204,8 @@ class _PatternCanvasState extends State<PatternCanvas> {
       return;
     }
 
-    final column = (gridX / widget.cellSize).floor();
-    final displayRow = (gridY / widget.cellSize).floor();
+    final column = (gridX / _scaledCellSize).floor();
+    final displayRow = (gridY / _scaledCellSize).floor();
 
     if (column < 0 ||
         column >= widget.columns ||
@@ -194,7 +249,7 @@ class _PatternCanvasState extends State<PatternCanvas> {
           size: Size(_gridWidth, widget.columnNumberHeight),
           painter: PatternColumnHeaderPainter(
             columns: widget.columns,
-            cellSize: widget.cellSize,
+            cellSize: _scaledCellSize,
             headerHeight: widget.columnNumberHeight,
             theme: widget.theme,
           ),
@@ -213,7 +268,7 @@ class _PatternCanvasState extends State<PatternCanvas> {
           size: Size(widget.rowNumberWidth, _gridHeight),
           painter: PatternRowHeaderPainter(
             rows: widget.rows,
-            cellSize: widget.cellSize,
+            cellSize: _scaledCellSize,
             headerWidth: widget.rowNumberWidth,
             theme: widget.theme,
           ),
@@ -253,7 +308,7 @@ class _PatternCanvasState extends State<PatternCanvas> {
               rows: widget.rows,
               columns: widget.columns,
               grid: widget.grid,
-              cellSize: widget.cellSize,
+              cellSize: _scaledCellSize,
               theme: widget.theme,
             ),
           ),
@@ -262,27 +317,48 @@ class _PatternCanvasState extends State<PatternCanvas> {
     );
   }
 
+  // Ctrl + マウスホイールでズーム（通常ホイールは縦スクロールのまま）
+  void _handlePointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) {
+      return;
+    }
+    if (!HardwareKeyboard.instance.isControlPressed) {
+      return;
+    }
+
+    if (event.scrollDelta.dy < 0) {
+      // ホイール上方向 → 拡大
+      widget.onZoomIn?.call();
+    } else if (event.scrollDelta.dy > 0) {
+      // ホイール下方向 → 縮小
+      widget.onZoomOut?.call();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildFixedCorner(),
-            Expanded(child: _buildColumnHeader()),
-          ],
-        ),
-        Expanded(
-          child: Row(
+    return Listener(
+      onPointerSignal: _handlePointerSignal,
+      child: Column(
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildRowHeader(),
-              Expanded(child: _buildGridBody()),
+              _buildFixedCorner(),
+              Expanded(child: _buildColumnHeader()),
             ],
           ),
-        ),
-      ],
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildRowHeader(),
+                Expanded(child: _buildGridBody()),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

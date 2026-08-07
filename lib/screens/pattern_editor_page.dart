@@ -21,7 +21,7 @@ class PatternEditorPage extends StatefulWidget {
 
   static const double cellSize = 36;
   static const double rowNumberWidth = 36;
-  static const double columnNumberHeight = 28;
+  static const double columnNumberHeight = 30;
 
   @override
   State<PatternEditorPage> createState() => _PatternEditorPageState();
@@ -39,6 +39,50 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   List<CellChange>? _undoChanges;
   List<CellChange>? _gestureChanges;
   bool _isSaving = false;
+
+  // ズーム倍率（6段階）
+  static const List<double> _zoomLevels = [
+    0.5,
+    0.75,
+    1.0,
+    1.25,
+    1.5,
+    2.0,
+  ];
+  double _zoom = 1.0;
+
+  String get _zoomLabel => '${(_zoom * 100).round()}%';
+
+  bool get _canZoomOut => _zoomLevels.indexOf(_zoom) > 0;
+
+  bool get _canZoomIn =>
+      _zoomLevels.indexOf(_zoom) < _zoomLevels.length - 1;
+
+  void _zoomOut() {
+    final index = _zoomLevels.indexOf(_zoom);
+    if (index <= 0) {
+      return;
+    }
+    setState(() {
+      _zoom = _zoomLevels[index - 1];
+    });
+  }
+
+  void _zoomIn() {
+    final index = _zoomLevels.indexOf(_zoom);
+    if (index < 0 || index >= _zoomLevels.length - 1) {
+      return;
+    }
+    setState(() {
+      _zoom = _zoomLevels[index + 1];
+    });
+  }
+
+  void _resetZoom() {
+    setState(() {
+      _zoom = 1.0;
+    });
+  }
 
   @override
   void initState() {
@@ -311,6 +355,20 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
         ),
         title: Text('$_columns × $_rows'),
         actions: [
+          IconButton(
+            onPressed: _canZoomOut ? _zoomOut : null,
+            icon: const Text('－'),
+            tooltip: '縮小',
+          ),
+          TextButton(
+            onPressed: _resetZoom,
+            child: Text(_zoomLabel),
+          ),
+          IconButton(
+            onPressed: _canZoomIn ? _zoomIn : null,
+            icon: const Text('＋'),
+            tooltip: '拡大',
+          ),
           TextButton.icon(
             onPressed: _isSaving ? null : _savePattern,
             icon: _isSaving
@@ -343,9 +401,12 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                   rowNumberWidth: PatternEditorPage.rowNumberWidth,
                   columnNumberHeight: PatternEditorPage.columnNumberHeight,
                   theme: Theme.of(context),
+                  zoom: _zoom,
                   onCellEdit: _onCellEdit,
                   onEditStart: _startEditing,
                   onEditEnd: _finishEditing,
+                  onZoomIn: _zoomIn,
+                  onZoomOut: _zoomOut,
                 ),
               ),
             ),

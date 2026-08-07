@@ -14,9 +14,13 @@ class PatternColumnHeaderPainter extends CustomPainter {
   final double headerHeight;
   final ThemeData theme;
 
+  // 1～99列は11px、100列以上は9px
+  static const double _normalFontSize = 11;
+  static const double _compactFontSize = 9;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final textStyle =
+    final baseStyle =
         theme.textTheme.labelMedium ?? const TextStyle(fontSize: 12);
     final borderColor = theme.colorScheme.outline;
     final borderPaint = Paint()
@@ -25,10 +29,17 @@ class PatternColumnHeaderPainter extends CustomPainter {
       ..strokeWidth = 1;
 
     for (var column = 0; column < columns; column++) {
+      final columnNumber = column + 1;
+      final fontSize =
+          columnNumber >= 100 ? _compactFontSize : _normalFontSize;
+
       _paintCenteredText(
         canvas,
-        '${column + 1}',
-        textStyle,
+        '$columnNumber',
+        baseStyle.copyWith(
+          fontSize: fontSize,
+          height: 1.0,
+        ),
         Rect.fromLTWH(column * cellSize, 0, cellSize, headerHeight),
       );
     }
@@ -49,6 +60,7 @@ class PatternColumnHeaderPainter extends CustomPainter {
     );
   }
 
+  // 1行・中央揃えで文字を描画する
   void _paintCenteredText(
     Canvas canvas,
     String text,
@@ -58,6 +70,7 @@ class PatternColumnHeaderPainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
       textDirection: TextDirection.ltr,
+      maxLines: 1,
     );
     textPainter.layout(minWidth: 0, maxWidth: rect.width);
     final offset = Offset(
