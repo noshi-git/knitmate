@@ -13,10 +13,9 @@ class PatternSize {
   final int columns;
 }
 
-// 編み図サイズの上限（段階的に拡大中）
-// TODO: 最終目標は maxColumns = 200, maxRows = 300
-const int maxColumns = 100;
-const int maxRows = 100;
+// 編み図サイズの上限（200×300 正式対応済み）
+const int maxColumns = 200;
+const int maxRows = 300;
 
 class ProjectListPage extends StatefulWidget {
   const ProjectListPage({super.key});
