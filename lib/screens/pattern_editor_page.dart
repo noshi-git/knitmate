@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/project.dart';
 import '../models/stitch_symbol.dart';
+import '../painters/pattern_grid_painter.dart';
 import '../services/project_storage_service.dart';
 
 class PatternEditorPage extends StatefulWidget {
@@ -313,72 +314,8 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
         : OutlinedButton(onPressed: onPressed, child: Text(label));
   }
 
-  Widget _buildColumnNumbers(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(
-          width: PatternEditorPage.rowNumberWidth,
-          height: PatternEditorPage.columnNumberHeight,
-        ),
-        ...List.generate(
-          _columns,
-          (column) => SizedBox(
-            width: PatternEditorPage.cellSize,
-            height: PatternEditorPage.columnNumberHeight,
-            child: Center(
-              child: Text(
-                '${column + 1}',
-                style: Theme.of(context).textTheme.labelMedium,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGridRow(
-    BuildContext context,
-    int displayIndex,
-    Color borderColor,
-  ) {
-    final row = _rows - 1 - displayIndex;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: PatternEditorPage.rowNumberWidth,
-          height: PatternEditorPage.cellSize,
-          child: Center(
-            child: Text(
-              '${row + 1}',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          ),
-        ),
-        ...List.generate(
-          _columns,
-          (column) => Container(
-            width: PatternEditorPage.cellSize,
-            height: PatternEditorPage.cellSize,
-            decoration: BoxDecoration(
-              border: Border.all(color: borderColor),
-            ),
-            alignment: Alignment.center,
-            child: _buildSymbolWidget(context, _grid[row][column]),
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final borderColor = Theme.of(context).colorScheme.outline;
-
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -428,19 +365,23 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                         },
                         onPointerUp: (_) => _finishEditing(),
                         onPointerCancel: (_) => _finishEditing(),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildColumnNumbers(context),
-                            ...List.generate(
-                              _rows,
-                              (displayIndex) => _buildGridRow(
-                                context,
-                                displayIndex,
-                                borderColor,
-                              ),
-                            ),
-                          ],
+                        child: CustomPaint(
+                          size: Size(
+                            PatternEditorPage.rowNumberWidth +
+                                _columns * PatternEditorPage.cellSize,
+                            PatternEditorPage.columnNumberHeight +
+                                _rows * PatternEditorPage.cellSize,
+                          ),
+                          painter: PatternGridPainter(
+                            rows: _rows,
+                            columns: _columns,
+                            grid: _grid,
+                            cellSize: PatternEditorPage.cellSize,
+                            rowNumberWidth: PatternEditorPage.rowNumberWidth,
+                            columnNumberHeight:
+                                PatternEditorPage.columnNumberHeight,
+                            theme: Theme.of(context),
+                          ),
                         ),
                       ),
                     ),
