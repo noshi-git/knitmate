@@ -333,26 +333,19 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
         child: Column(
           children: [
             Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: PatternCanvas(
-                        rows: _rows,
-                        columns: _columns,
-                        grid: _grid,
-                        cellSize: PatternEditorPage.cellSize,
-                        rowNumberWidth: PatternEditorPage.rowNumberWidth,
-                        columnNumberHeight: PatternEditorPage.columnNumberHeight,
-                        theme: Theme.of(context),
-                        onCellEdit: _onCellEdit,
-                        onEditStart: _startEditing,
-                        onEditEnd: _finishEditing,
-                      ),
-                    ),
-                  ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: PatternCanvas(
+                  rows: _rows,
+                  columns: _columns,
+                  grid: _grid,
+                  cellSize: PatternEditorPage.cellSize,
+                  rowNumberWidth: PatternEditorPage.rowNumberWidth,
+                  columnNumberHeight: PatternEditorPage.columnNumberHeight,
+                  theme: Theme.of(context),
+                  onCellEdit: _onCellEdit,
+                  onEditStart: _startEditing,
+                  onEditEnd: _finishEditing,
                 ),
               ),
             ),

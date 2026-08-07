@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../models/stitch_symbol.dart';
 
-// 編み図の罫線・段番号・列番号・編み記号を描画する
+// 編み図本体の罫線と編み記号を描画する
 class PatternGridPainter extends CustomPainter {
   PatternGridPainter({
     required this.rows,
     required this.columns,
     required this.grid,
     required this.cellSize,
-    required this.rowNumberWidth,
-    required this.columnNumberHeight,
     required this.theme,
   });
 
@@ -18,73 +16,18 @@ class PatternGridPainter extends CustomPainter {
   final int columns;
   final List<List<StitchSymbol>> grid;
   final double cellSize;
-  final double rowNumberWidth;
-  final double columnNumberHeight;
   final ThemeData theme;
 
   @override
   void paint(Canvas canvas, Size size) {
     final borderColor = theme.colorScheme.outline;
-    final textStyle =
-        theme.textTheme.labelMedium ?? const TextStyle(fontSize: 12);
 
     final gridPaint = Paint()
       ..color = borderColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    // 列番号（上段）
-    for (var column = 0; column < columns; column++) {
-      _paintCenteredText(
-        canvas,
-        '${column + 1}',
-        textStyle,
-        Rect.fromLTWH(
-          rowNumberWidth + column * cellSize,
-          0,
-          cellSize,
-          columnNumberHeight,
-        ),
-      );
-    }
-
-    // 段番号と横罫線（上から rows → 1 の順）
-    for (var displayIndex = 0; displayIndex < rows; displayIndex++) {
-      final rowNumber = rows - displayIndex;
-      final y = columnNumberHeight + displayIndex * cellSize;
-
-      _paintCenteredText(
-        canvas,
-        '$rowNumber',
-        textStyle,
-        Rect.fromLTWH(0, y, rowNumberWidth, cellSize),
-      );
-
-      canvas.drawLine(
-        Offset(rowNumberWidth, y),
-        Offset(rowNumberWidth + columns * cellSize, y),
-        gridPaint,
-      );
-    }
-
-    // 最下段の横罫線
-    canvas.drawLine(
-      Offset(rowNumberWidth, columnNumberHeight + rows * cellSize),
-      Offset(rowNumberWidth + columns * cellSize, columnNumberHeight + rows * cellSize),
-      gridPaint,
-    );
-
-    // 縦罫線
-    for (var column = 0; column <= columns; column++) {
-      final x = rowNumberWidth + column * cellSize;
-      canvas.drawLine(
-        Offset(x, columnNumberHeight),
-        Offset(x, columnNumberHeight + rows * cellSize),
-        gridPaint,
-      );
-    }
-
-    // 編み記号（grid の内容に応じて各セル中央へ描画）
+    // 横罫線と編み記号（上から rows → 1 の順）
     final bodyLargeStyle =
         theme.textTheme.bodyLarge ?? const TextStyle(fontSize: 16);
     final labelSmallStyle =
@@ -93,10 +36,16 @@ class PatternGridPainter extends CustomPainter {
 
     for (var displayIndex = 0; displayIndex < rows; displayIndex++) {
       final row = rows - 1 - displayIndex;
-      final y = columnNumberHeight + displayIndex * cellSize;
+      final y = displayIndex * cellSize;
+
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(columns * cellSize, y),
+        gridPaint,
+      );
 
       for (var column = 0; column < columns; column++) {
-        final x = rowNumberWidth + column * cellSize;
+        final x = column * cellSize;
         final cellRect = Rect.fromLTWH(x, y, cellSize, cellSize);
         _paintSymbol(
           canvas,
@@ -107,6 +56,23 @@ class PatternGridPainter extends CustomPainter {
           symbolLineColor,
         );
       }
+    }
+
+    // 最下段の横罫線
+    canvas.drawLine(
+      Offset(0, rows * cellSize),
+      Offset(columns * cellSize, rows * cellSize),
+      gridPaint,
+    );
+
+    // 縦罫線
+    for (var column = 0; column <= columns; column++) {
+      final x = column * cellSize;
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, rows * cellSize),
+        gridPaint,
+      );
     }
   }
 
@@ -138,7 +104,7 @@ class PatternGridPainter extends CustomPainter {
     }
   }
 
-  // 長々編み：横線2本 + T（Widget版の Column 構成に近い見た目）
+  // 長々編み：横線2本 + T
   void _paintTrebleCrochet(
     Canvas canvas,
     Rect cellRect,
@@ -209,7 +175,7 @@ class PatternGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant PatternGridPainter oldDelegate) {
     // _grid は同一Listを直接変更するため、参照比較では変更を検出できない。
-    // Step2 では確実に再描画を優先する。
+    // 確実に再描画を優先する。
     // TODO(200x300): 差分Undoや repaintRevision などで必要時のみ再描画するよう最適化する。
     return true;
   }
