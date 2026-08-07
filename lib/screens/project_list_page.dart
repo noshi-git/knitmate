@@ -17,6 +17,13 @@ class PatternSize {
 const int maxColumns = 200;
 const int maxRows = 300;
 
+// 作品一覧の並び替え条件
+enum ProjectSortType {
+  updatedAt, // 最近更新
+  name, // 名前順
+  createdAt, // 作成日順
+}
+
 class ProjectListPage extends StatefulWidget {
   const ProjectListPage({super.key});
 
@@ -29,6 +36,7 @@ class _ProjectListPageState extends State<ProjectListPage> {
 
   List<Project> _projects = [];
   bool _isLoading = true;
+  ProjectSortType _sortType = ProjectSortType.updatedAt;
 
   @override
   void initState() {
@@ -48,7 +56,7 @@ class _ProjectListPageState extends State<ProjectListPage> {
         return;
       }
       setState(() {
-        _projects = projects;
+        _projects = _sortProjects(projects);
         _isLoading = false;
       });
     } catch (_) {
@@ -59,6 +67,41 @@ class _ProjectListPageState extends State<ProjectListPage> {
         _projects = [];
         _isLoading = false;
       });
+    }
+  }
+
+  // 現在の並び替え条件を適用する（保存データは変更しない）
+  List<Project> _sortProjects(List<Project> projects) {
+    final sorted = List<Project>.from(projects);
+
+    switch (_sortType) {
+      case ProjectSortType.updatedAt:
+        sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      case ProjectSortType.name:
+        sorted.sort((a, b) => a.name.compareTo(b.name));
+      case ProjectSortType.createdAt:
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+
+    return sorted;
+  }
+
+  // 並び替え条件を変更して一覧を即座に並び替える
+  void _changeSortType(ProjectSortType sortType) {
+    setState(() {
+      _sortType = sortType;
+      _projects = _sortProjects(_projects);
+    });
+  }
+
+  String _sortTypeLabel(ProjectSortType sortType) {
+    switch (sortType) {
+      case ProjectSortType.updatedAt:
+        return '最近更新';
+      case ProjectSortType.name:
+        return '名前順';
+      case ProjectSortType.createdAt:
+        return '作成日順';
     }
   }
 
@@ -448,6 +491,30 @@ class _ProjectListPageState extends State<ProjectListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('作品一覧'),
+        actions: [
+          PopupMenuButton<ProjectSortType>(
+            icon: const Icon(Icons.sort),
+            tooltip: '並び替え',
+            onSelected: _changeSortType,
+            itemBuilder: (context) => [
+              CheckedPopupMenuItem<ProjectSortType>(
+                value: ProjectSortType.updatedAt,
+                checked: _sortType == ProjectSortType.updatedAt,
+                child: Text(_sortTypeLabel(ProjectSortType.updatedAt)),
+              ),
+              CheckedPopupMenuItem<ProjectSortType>(
+                value: ProjectSortType.name,
+                checked: _sortType == ProjectSortType.name,
+                child: Text(_sortTypeLabel(ProjectSortType.name)),
+              ),
+              CheckedPopupMenuItem<ProjectSortType>(
+                value: ProjectSortType.createdAt,
+                checked: _sortType == ProjectSortType.createdAt,
+                child: Text(_sortTypeLabel(ProjectSortType.createdAt)),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
