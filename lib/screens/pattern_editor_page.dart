@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../models/cell_change.dart';
 import '../models/project.dart';
-import '../models/stitch_symbol.dart';
+import '../models/stitch_definition.dart';
 import '../services/project_storage_service.dart';
+import '../services/stitch_settings_service.dart';
 import '../widgets/pattern_canvas.dart';
 
 class PatternEditorPage extends StatefulWidget {
@@ -29,13 +30,18 @@ class PatternEditorPage extends StatefulWidget {
 
 class _PatternEditorPageState extends State<PatternEditorPage> {
   final ProjectStorageService _storage = ProjectStorageService();
+  final StitchSettingsService _stitchSettingsService = StitchSettingsService();
 
-  late int _rows;
-  late int _columns;
-  late List<List<StitchSymbol>> _grid;
+  int _rows = 1;
+  int _columns = 1;
+  List<List<int>> _grid = [[StitchDefinition.emptyStorageIndex]];
   Project? _currentProject;
 
-  StitchSymbol _selectedSymbol = StitchSymbol.singleCrochet;
+  List<StitchDefinition> _definitions = [];
+  Map<int, StitchDefinition> _definitionsByStorageIndex = {};
+  int _selectedStorageIndex = StitchDefinition.singleCrochetStorageIndex;
+  bool _isDefinitionsLoading = true;
+
   List<CellChange>? _undoChanges;
   List<CellChange>? _gestureChanges;
   bool _isSaving = false;
@@ -57,6 +63,14 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
 
   bool get _canZoomIn =>
       _zoomLevels.indexOf(_zoom) < _zoomLevels.length - 1;
+
+  // 選択ボタン用：有効な空白以外の編み記号
+  List<StitchDefinition> get _selectableDefinitions => _definitions
+      .where((definition) => definition.enabled && !definition.system)
+      .toList();
+
+  StitchDefinition? get _emptyDefinition =>
+      _definitionsByStorageIndex[StitchDefinition.emptyStorageIndex];
 
   void _zoomOut() {
     final index = _zoomLevels.indexOf(_zoom);
@@ -87,40 +101,83 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   @override
   void initState() {
     super.initState();
+    // グリッドは widget から同期的に決められるため、build 前に必ず初期化する
+    _initializeGridSync();
+    _loadDefinitions();
+  }
 
+  // 作品サイズとグリッドを同期的に初期化する
+  void _initializeGridSync() {
     if (widget.project != null) {
-      // 既存作品を開いた場合はProjectから読み込む
+      // 既存作品は storageIndex をそのまま利用する
       _currentProject = widget.project;
       _rows = widget.project!.rows;
       _columns = widget.project!.columns;
-      _grid = _gridFromInts(widget.project!.grid);
-    } else {
-      // 新規作品の場合は空のグリッドから開始
-      _rows = widget.initialRows;
-      _columns = widget.initialColumns;
-      _grid = _createEmptyGrid(_rows, _columns);
+      _grid = widget.project!.grid
+          .map((row) => List<int>.from(row))
+          .toList();
+      return;
+    }
+
+    _rows = widget.initialRows;
+    _columns = widget.initialColumns;
+    _grid = _createEmptyGrid(_rows, _columns);
+  }
+
+  // 編み記号設定だけ非同期で読み込む
+  Future<void> _loadDefinitions() async {
+    try {
+      final definitions = await _stitchSettingsService.loadDefinitions();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _definitions = definitions;
+        _definitionsByStorageIndex = {
+          for (final definition in definitions)
+            definition.storageIndex: definition,
+        };
+        _selectedStorageIndex = _resolveInitialSelection();
+        _isDefinitionsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isDefinitionsLoading = false;
+      });
+      _showMessage('編み記号設定の読み込みに失敗しました');
     }
   }
 
-  List<List<StitchSymbol>> _gridFromInts(List<List<int>> grid) {
-    return grid
-        .map(
-          (row) => row.map((value) => StitchSymbol.values[value]).toList(),
-        )
-        .toList();
+  // 初期選択：細編み(1) → 最初の有効記号 → 空白(0)
+  int _resolveInitialSelection() {
+    const defaultIndex = StitchDefinition.singleCrochetStorageIndex;
+    final defaultDefinition = _definitionsByStorageIndex[defaultIndex];
+    if (defaultDefinition != null && defaultDefinition.enabled) {
+      return defaultIndex;
+    }
+
+    for (final definition in _definitions) {
+      if (definition.enabled && !definition.system) {
+        return definition.storageIndex;
+      }
+    }
+
+    return StitchDefinition.emptyStorageIndex;
+  }
+
+  List<List<int>> _createEmptyGrid(int rows, int columns) {
+    return List.generate(
+      rows,
+      (_) => List.generate(columns, (_) => StitchDefinition.emptyStorageIndex),
+    );
   }
 
   List<List<int>> _gridToInts() {
-    return _grid
-        .map((row) => row.map((symbol) => symbol.index).toList())
-        .toList();
-  }
-
-  List<List<StitchSymbol>> _createEmptyGrid(int rows, int columns) {
-    return List.generate(
-      rows,
-      (_) => List.generate(columns, (_) => StitchSymbol.empty),
-    );
+    return _grid.map((row) => List<int>.from(row)).toList();
   }
 
   void _startEditing() {
@@ -142,7 +199,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
 
   // PatternCanvas からのセル編集通知を受け取る
   void _onCellEdit(int row, int column) {
-    if (_grid[row][column] == _selectedSymbol) {
+    if (_grid[row][column] == _selectedStorageIndex) {
       return;
     }
 
@@ -152,7 +209,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
           CellChange(
             row: row,
             column: column,
-            previousSymbol: _grid[row][column],
+            previousStorageIndex: _grid[row][column],
           ),
         );
       }
@@ -162,7 +219,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
         _undoChanges = _gestureChanges;
       }
 
-      _grid[row][column] = _selectedSymbol;
+      _grid[row][column] = _selectedStorageIndex;
     });
   }
 
@@ -175,7 +232,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     setState(() {
       for (var i = changes.length - 1; i >= 0; i--) {
         final change = changes[i];
-        _grid[change.row][change.column] = change.previousSymbol;
+        _grid[change.row][change.column] = change.previousStorageIndex;
       }
       _undoChanges = null;
     });
@@ -304,43 +361,58 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Widget _buildSymbolWidget(BuildContext context, StitchSymbol symbol) {
-    final textStyle = Theme.of(context).textTheme.bodyLarge;
-    final lineColor = Theme.of(context).colorScheme.onSurface;
-
-    switch (symbol) {
-      case StitchSymbol.empty:
-        return const SizedBox.shrink();
-      case StitchSymbol.singleCrochet:
-        return Text('×', style: textStyle);
-      case StitchSymbol.doubleCrochet:
-        return Text('T', style: textStyle);
-      case StitchSymbol.trebleCrochet:
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 12, height: 1.5, color: lineColor),
-            const SizedBox(height: 1),
-            Container(width: 12, height: 1.5, color: lineColor),
-            const SizedBox(height: 1),
-            Text('T', style: Theme.of(context).textTheme.labelSmall),
-          ],
-        );
-      case StitchSymbol.slipStitch:
-        return Text('●', style: textStyle);
-    }
-  }
-
-  Widget _buildSymbolButton(StitchSymbol symbol, String label) {
-    final onPressed = () {
+  Widget _buildStorageIndexButton(int storageIndex, String label) {
+    void onPressed() {
       setState(() {
-        _selectedSymbol = symbol;
+        _selectedStorageIndex = storageIndex;
       });
-    };
+    }
 
-    return _selectedSymbol == symbol
+    return _selectedStorageIndex == storageIndex
         ? FilledButton(onPressed: onPressed, child: Text(label))
         : OutlinedButton(onPressed: onPressed, child: Text(label));
+  }
+
+  Widget _buildSymbolSelector() {
+    final emptyDefinition = _emptyDefinition;
+    final emptyLabel = emptyDefinition?.name ?? '空白';
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildStorageIndexButton(
+            StitchDefinition.emptyStorageIndex,
+            emptyLabel,
+          ),
+          const SizedBox(width: 8),
+          for (final definition in _selectableDefinitions) ...[
+            _buildStorageIndexButton(
+              definition.storageIndex,
+              '${definition.symbol} ${definition.name}',
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSymbolSelectorArea() {
+    if (_isDefinitionsLoading) {
+      return const SizedBox(
+        height: 48,
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    return _buildSymbolSelector();
   }
 
   @override
@@ -397,6 +469,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                   rows: _rows,
                   columns: _columns,
                   grid: _grid,
+                  definitionsByStorageIndex: _definitionsByStorageIndex,
                   cellSize: PatternEditorPage.cellSize,
                   rowNumberWidth: PatternEditorPage.rowNumberWidth,
                   columnNumberHeight: PatternEditorPage.columnNumberHeight,
@@ -415,25 +488,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildSymbolButton(StitchSymbol.empty, '空白'),
-                        const SizedBox(width: 8),
-                        _buildSymbolButton(StitchSymbol.singleCrochet, '細編み'),
-                        const SizedBox(width: 8),
-                        _buildSymbolButton(StitchSymbol.doubleCrochet, '長編み'),
-                        const SizedBox(width: 8),
-                        _buildSymbolButton(StitchSymbol.trebleCrochet, '長々編み'),
-                        const SizedBox(width: 8),
-                        _buildSymbolButton(
-                          StitchSymbol.slipStitch,
-                          '引き抜き編み',
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildSymbolSelectorArea(),
                 ],
               ),
             ),

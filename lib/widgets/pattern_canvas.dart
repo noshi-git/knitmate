@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../models/stitch_symbol.dart';
+import '../models/stitch_definition.dart';
 import '../painters/pattern_column_header_painter.dart';
 import '../painters/pattern_grid_painter.dart';
 import '../painters/pattern_row_header_painter.dart';
@@ -14,6 +14,7 @@ class PatternCanvas extends StatefulWidget {
     required this.rows,
     required this.columns,
     required this.grid,
+    required this.definitionsByStorageIndex,
     required this.cellSize,
     required this.rowNumberWidth,
     required this.columnNumberHeight,
@@ -28,7 +29,8 @@ class PatternCanvas extends StatefulWidget {
 
   final int rows;
   final int columns;
-  final List<List<StitchSymbol>> grid;
+  final List<List<int>> grid;
+  final Map<int, StitchDefinition> definitionsByStorageIndex;
   final double cellSize;
   final double rowNumberWidth;
   final double columnNumberHeight;
@@ -308,6 +310,7 @@ class _PatternCanvasState extends State<PatternCanvas> {
               rows: widget.rows,
               columns: widget.columns,
               grid: widget.grid,
+              definitionsByStorageIndex: widget.definitionsByStorageIndex,
               cellSize: _scaledCellSize,
               theme: widget.theme,
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/counter_page.dart';
 import 'screens/project_list_page.dart';
+import 'screens/settings_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -55,6 +56,18 @@ class MyHomePage extends StatelessWidget {
               ),
               SizedBox(
                 width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ProjectListPage(),
+                    ),
+                  ),
+                  child: const Text('作品一覧'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
                 child: FilledButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -70,10 +83,10 @@ class MyHomePage extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const ProjectListPage(),
+                      builder: (_) => const SettingsPage(),
                     ),
                   ),
-                  child: const Text('作品一覧'),
+                  child: const Text('設定'),
                 ),
               ),
             ],

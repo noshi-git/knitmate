@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/stitch_symbol.dart';
+import '../models/stitch_definition.dart';
 
 // 編み図本体の罫線と編み記号を描画する
 class PatternGridPainter extends CustomPainter {
@@ -8,13 +8,15 @@ class PatternGridPainter extends CustomPainter {
     required this.rows,
     required this.columns,
     required this.grid,
+    required this.definitionsByStorageIndex,
     required this.cellSize,
     required this.theme,
   });
 
   final int rows;
   final int columns;
-  final List<List<StitchSymbol>> grid;
+  final List<List<int>> grid;
+  final Map<int, StitchDefinition> definitionsByStorageIndex;
   final double cellSize;
   final ThemeData theme;
 
@@ -27,13 +29,10 @@ class PatternGridPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    // 横罫線と編み記号（上から rows → 1 の順）
-    final bodyLargeStyle =
+    final baseStyle =
         theme.textTheme.bodyLarge ?? const TextStyle(fontSize: 16);
-    final labelSmallStyle =
-        theme.textTheme.labelSmall ?? const TextStyle(fontSize: 11);
-    final symbolLineColor = theme.colorScheme.onSurface;
 
+    // 横罫線と編み記号（上から rows → 1 の順）
     for (var displayIndex = 0; displayIndex < rows; displayIndex++) {
       final row = rows - 1 - displayIndex;
       final y = displayIndex * cellSize;
@@ -51,9 +50,7 @@ class PatternGridPainter extends CustomPainter {
           canvas,
           grid[row][column],
           cellRect,
-          bodyLargeStyle,
-          labelSmallStyle,
-          symbolLineColor,
+          baseStyle,
         );
       }
     }
@@ -79,78 +76,40 @@ class PatternGridPainter extends CustomPainter {
   // 1マス分の編み記号を Canvas で描画する
   void _paintSymbol(
     Canvas canvas,
-    StitchSymbol symbol,
+    int storageIndex,
     Rect cellRect,
-    TextStyle bodyLargeStyle,
-    TextStyle labelSmallStyle,
-    Color lineColor,
+    TextStyle baseStyle,
   ) {
-    switch (symbol) {
-      case StitchSymbol.empty:
-        return;
-      case StitchSymbol.singleCrochet:
-        _paintCenteredText(canvas, '×', bodyLargeStyle, cellRect);
-      case StitchSymbol.doubleCrochet:
-        _paintCenteredText(canvas, 'T', bodyLargeStyle, cellRect);
-      case StitchSymbol.trebleCrochet:
-        _paintTrebleCrochet(
-          canvas,
-          cellRect,
-          labelSmallStyle,
-          lineColor,
-        );
-      case StitchSymbol.slipStitch:
-        _paintCenteredText(canvas, '●', bodyLargeStyle, cellRect);
+    if (storageIndex == StitchDefinition.emptyStorageIndex) {
+      return;
     }
+
+    final definition = definitionsByStorageIndex[storageIndex];
+    if (definition == null || definition.symbol.isEmpty) {
+      return;
+    }
+
+    final fontSize = _fontSizeForSymbol(definition.symbol, cellRect.width);
+    _paintCenteredText(
+      canvas,
+      definition.symbol,
+      baseStyle.copyWith(fontSize: fontSize, height: 1.0),
+      cellRect,
+    );
   }
 
-  // 長々編み：横線2本 + T
-  void _paintTrebleCrochet(
-    Canvas canvas,
-    Rect cellRect,
-    TextStyle labelSmallStyle,
-    Color lineColor,
-  ) {
-    const lineWidth = 12.0;
-    const lineHeight = 1.5;
-    const gap = 1.0;
-
-    final textPainter = TextPainter(
-      text: TextSpan(text: 'T', style: labelSmallStyle),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-
-    final totalHeight = lineHeight + gap + lineHeight + gap + textPainter.height;
-    var top = cellRect.center.dy - totalHeight / 2;
-    final centerX = cellRect.center.dx;
-
-    final linePaint = Paint()..color = lineColor;
-
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(centerX, top + lineHeight / 2),
-        width: lineWidth,
-        height: lineHeight,
-      ),
-      linePaint,
-    );
-    top += lineHeight + gap;
-
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(centerX, top + lineHeight / 2),
-        width: lineWidth,
-        height: lineHeight,
-      ),
-      linePaint,
-    );
-    top += lineHeight + gap;
-
-    textPainter.paint(
-      canvas,
-      Offset(centerX - textPainter.width / 2, top),
-    );
+  // 1～3文字がセル内に収まるよう文字サイズを調整する
+  double _fontSizeForSymbol(String symbol, double cellSize) {
+    switch (symbol.length) {
+      case 1:
+        return cellSize * 0.45;
+      case 2:
+        return cellSize * 0.34;
+      case 3:
+        return cellSize * 0.28;
+      default:
+        return cellSize * 0.24;
+    }
   }
 
   // 指定矩形の中央に文字を描画する
@@ -163,6 +122,7 @@ class PatternGridPainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
       textDirection: TextDirection.ltr,
+      maxLines: 1,
     );
     textPainter.layout(minWidth: 0, maxWidth: rect.width);
     final offset = Offset(
