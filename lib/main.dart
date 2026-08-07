@@ -56,7 +56,7 @@ class MyHomePage extends StatelessWidget {
               ),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
+                child: FilledButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => const ProjectListPage(),
@@ -68,7 +68,7 @@ class MyHomePage extends StatelessWidget {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
+                child: OutlinedButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => const CounterPage(),
@@ -81,6 +81,10 @@ class MyHomePage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                    side: BorderSide(color: Colors.grey.shade600),
+                  ),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => const SettingsPage(),
