@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models/project.dart';
 import '../models/stitch_symbol.dart';
-import '../painters/pattern_grid_painter.dart';
 import '../services/project_storage_service.dart';
+import '../widgets/pattern_canvas.dart';
 
 class PatternEditorPage extends StatefulWidget {
   const PatternEditorPage({
@@ -39,8 +39,6 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   List<List<StitchSymbol>>? _gestureStartGrid;
   bool _gestureChanged = false;
   bool _isSaving = false;
-  int? _lastEditedRow;
-  int? _lastEditedColumn;
 
   @override
   void initState() {
@@ -86,47 +84,17 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   }
 
   void _startEditing() {
-    _lastEditedRow = null;
-    _lastEditedColumn = null;
     _gestureStartGrid = _copyGrid(_grid);
     _gestureChanged = false;
   }
 
   void _finishEditing() {
-    _lastEditedRow = null;
-    _lastEditedColumn = null;
     _gestureStartGrid = null;
     _gestureChanged = false;
   }
 
-  void _editCellFromPosition(Offset localPosition) {
-    final gridX = localPosition.dx - PatternEditorPage.rowNumberWidth;
-    final gridY = localPosition.dy - PatternEditorPage.columnNumberHeight;
-
-    if (gridX < 0 || gridY < 0) {
-      return;
-    }
-
-    final column = (gridX / PatternEditorPage.cellSize).floor();
-    final displayRow = (gridY / PatternEditorPage.cellSize).floor();
-
-    if (column < 0 ||
-        column >= _columns ||
-        displayRow < 0 ||
-        displayRow >= _rows) {
-      return;
-    }
-
-    // 内部では第1段をrow 0に保存し、画面では下から上へ表示する。
-    final row = _rows - 1 - displayRow;
-
-    if (_lastEditedRow == row && _lastEditedColumn == column) {
-      return;
-    }
-
-    _lastEditedRow = row;
-    _lastEditedColumn = column;
-
+  // PatternCanvas からのセル編集通知を受け取る
+  void _onCellEdit(int row, int column) {
     if (_grid[row][column] == _selectedSymbol) {
       return;
     }
@@ -354,35 +322,17 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                     scrollDirection: Axis.horizontal,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Listener(
-                        behavior: HitTestBehavior.opaque,
-                        onPointerDown: (event) {
-                          _startEditing();
-                          _editCellFromPosition(event.localPosition);
-                        },
-                        onPointerMove: (event) {
-                          _editCellFromPosition(event.localPosition);
-                        },
-                        onPointerUp: (_) => _finishEditing(),
-                        onPointerCancel: (_) => _finishEditing(),
-                        child: CustomPaint(
-                          size: Size(
-                            PatternEditorPage.rowNumberWidth +
-                                _columns * PatternEditorPage.cellSize,
-                            PatternEditorPage.columnNumberHeight +
-                                _rows * PatternEditorPage.cellSize,
-                          ),
-                          painter: PatternGridPainter(
-                            rows: _rows,
-                            columns: _columns,
-                            grid: _grid,
-                            cellSize: PatternEditorPage.cellSize,
-                            rowNumberWidth: PatternEditorPage.rowNumberWidth,
-                            columnNumberHeight:
-                                PatternEditorPage.columnNumberHeight,
-                            theme: Theme.of(context),
-                          ),
-                        ),
+                      child: PatternCanvas(
+                        rows: _rows,
+                        columns: _columns,
+                        grid: _grid,
+                        cellSize: PatternEditorPage.cellSize,
+                        rowNumberWidth: PatternEditorPage.rowNumberWidth,
+                        columnNumberHeight: PatternEditorPage.columnNumberHeight,
+                        theme: Theme.of(context),
+                        onCellEdit: _onCellEdit,
+                        onEditStart: _startEditing,
+                        onEditEnd: _finishEditing,
                       ),
                     ),
                   ),
