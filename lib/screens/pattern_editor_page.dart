@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/cell_change.dart';
 import '../models/project.dart';
 import '../models/stitch_symbol.dart';
 import '../services/project_storage_service.dart';
@@ -35,9 +36,8 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   Project? _currentProject;
 
   StitchSymbol _selectedSymbol = StitchSymbol.singleCrochet;
-  List<List<StitchSymbol>>? _undoGrid;
-  List<List<StitchSymbol>>? _gestureStartGrid;
-  bool _gestureChanged = false;
+  List<CellChange>? _undoChanges;
+  List<CellChange>? _gestureChanges;
   bool _isSaving = false;
 
   @override
@@ -79,18 +79,21 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     );
   }
 
-  List<List<StitchSymbol>> _copyGrid(List<List<StitchSymbol>> source) {
-    return source.map((row) => List<StitchSymbol>.from(row)).toList();
-  }
-
   void _startEditing() {
-    _gestureStartGrid = _copyGrid(_grid);
-    _gestureChanged = false;
+    // 1回のドラッグ操作分の変更を記録する空リストを用意
+    _gestureChanges = [];
   }
 
   void _finishEditing() {
-    _gestureStartGrid = null;
-    _gestureChanged = false;
+    _gestureChanges = null;
+  }
+
+  // 同じ row+column が既に記録済みか
+  bool _isCellRecorded(int row, int column) {
+    return _gestureChanges?.any(
+          (change) => change.row == row && change.column == column,
+        ) ??
+        false;
   }
 
   // PatternCanvas からのセル編集通知を受け取る
@@ -100,23 +103,37 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     }
 
     setState(() {
-      if (!_gestureChanged && _gestureStartGrid != null) {
-        _undoGrid = _copyGrid(_gestureStartGrid!);
-        _gestureChanged = true;
+      if (!_isCellRecorded(row, column)) {
+        _gestureChanges?.add(
+          CellChange(
+            row: row,
+            column: column,
+            previousSymbol: _grid[row][column],
+          ),
+        );
       }
+
+      // 最初の変更から Undo 対象として保持（1回だけ Undo）
+      if (_gestureChanges != null && _gestureChanges!.isNotEmpty) {
+        _undoChanges = _gestureChanges;
+      }
+
       _grid[row][column] = _selectedSymbol;
     });
   }
 
   void _undo() {
-    final undoGrid = _undoGrid;
-    if (undoGrid == null) {
+    final changes = _undoChanges;
+    if (changes == null || changes.isEmpty) {
       return;
     }
 
     setState(() {
-      _grid = _copyGrid(undoGrid);
-      _undoGrid = null;
+      for (var i = changes.length - 1; i >= 0; i--) {
+        final change = changes[i];
+        _grid[change.row][change.column] = change.previousSymbol;
+      }
+      _undoChanges = null;
     });
   }
 
@@ -306,7 +323,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
             label: Text(_isSaving ? '保存中' : '保存'),
           ),
           IconButton(
-            onPressed: _undoGrid == null ? null : _undo,
+            onPressed: _undoChanges == null ? null : _undo,
             icon: const Icon(Icons.undo),
             tooltip: '元に戻す',
           ),
