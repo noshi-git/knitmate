@@ -68,6 +68,12 @@ class _ProjectListPageState extends State<ProjectListPage> {
     return '$year/$month/$day $hour:$minute';
   }
 
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   // 保存済み作品を編集画面で開く
   Future<void> _openProject(Project project) async {
     await Navigator.of(context).push(
@@ -86,6 +92,56 @@ class _ProjectListPageState extends State<ProjectListPage> {
 
     // 編集画面から戻ったら一覧を最新状態に更新
     await _loadProjects();
+  }
+
+  // 削除確認ダイアログを表示する
+  Future<void> _confirmDeleteProject(Project project) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('作品を削除'),
+        content: Text('『${project.name}』を削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    await _deleteProject(project);
+  }
+
+  // 作品を削除して一覧を更新する
+  Future<void> _deleteProject(Project project) async {
+    try {
+      await _storage.deleteProject(project.id);
+      if (!mounted) {
+        return;
+      }
+      await _loadProjects();
+      if (!mounted) {
+        return;
+      }
+      _showMessage('作品を削除しました');
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('作品の削除に失敗しました');
+    }
   }
 
   // 「新しい作品」ボタン：横（目数）と縦（段数）を入力するダイアログ
@@ -247,6 +303,29 @@ class _ProjectListPageState extends State<ProjectListPage> {
             ),
             isThreeLine: true,
             onTap: () => _openProject(project),
+            trailing: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'delete') {
+                  _confirmDeleteProject(project);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('削除'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

@@ -78,4 +78,15 @@ class ProjectStorageService {
 
     return null;
   }
+
+  // 指定IDの作品JSONファイルを削除する
+  Future<void> deleteProject(String id) async {
+    final projectsDir = await _getProjectsDirectory();
+    final file = File('${projectsDir.path}/$id.json');
+
+    // ファイルが存在する場合のみ削除（存在しなくてもエラーにしない）
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
 }
