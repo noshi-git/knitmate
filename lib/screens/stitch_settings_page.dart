@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../models/stitch_definition.dart';
+import '../models/stitch_label_display_mode.dart';
+import '../models/stitch_symbol_type.dart';
+import '../services/stitch_display_settings_service.dart';
 import '../services/stitch_settings_service.dart';
+import '../widgets/stitch_symbol_label.dart';
 
 // 編み記号の名称・表示記号を編集する画面
 class StitchSettingsPage extends StatefulWidget {
   const StitchSettingsPage({super.key});
 
-  static const int maxEnabledNonSystemCount = 15;
+  // 公式記号増加に備え、ユーザー追加分の余裕を確保する
+  static const int maxEnabledNonSystemCount = 40;
   static const int nameMaxLength = 20;
   static const int symbolMaxLength = 3;
+
+  /// V4.1 で選択可能な表示方法（nameOnly は将来追加）
+  static const List<StitchLabelDisplayMode> selectableDisplayModes = [
+    StitchLabelDisplayMode.symbolAndName,
+    StitchLabelDisplayMode.symbolOnly,
+  ];
 
   @override
   State<StitchSettingsPage> createState() => _StitchSettingsPageState();
@@ -17,6 +28,8 @@ class StitchSettingsPage extends StatefulWidget {
 
 class _StitchSettingsPageState extends State<StitchSettingsPage> {
   final StitchSettingsService _service = StitchSettingsService();
+  final StitchDisplaySettingsService _displaySettings =
+      StitchDisplaySettingsService.instance;
 
   List<StitchDefinition> _definitions = [];
   bool _isLoading = true;
@@ -274,6 +287,8 @@ class _StitchSettingsPageState extends State<StitchSettingsPage> {
     final formKey = GlobalKey<FormState>();
     var nameText = definition.name;
     var symbolText = definition.symbol;
+    final isOfficialVector =
+        StitchSymbolTypeMapper.fromId(definition.id) != StitchSymbolType.unknown;
 
     final result = await showDialog<bool>(
       context: context,
@@ -296,17 +311,19 @@ class _StitchSettingsPageState extends State<StitchSettingsPage> {
                 validator: _validateName,
                 onChanged: (value) => nameText = value,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: definition.symbol,
-                decoration: const InputDecoration(
-                  labelText: '記号',
-                  border: OutlineInputBorder(),
+              if (!isOfficialVector) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  initialValue: definition.symbol,
+                  decoration: const InputDecoration(
+                    labelText: '記号',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: StitchSettingsPage.symbolMaxLength,
+                  validator: _validateSymbol,
+                  onChanged: (value) => symbolText = value,
                 ),
-                maxLength: StitchSettingsPage.symbolMaxLength,
-                validator: _validateSymbol,
-                onChanged: (value) => symbolText = value,
-              ),
+              ],
             ],
           ),
         ),
@@ -334,60 +351,153 @@ class _StitchSettingsPageState extends State<StitchSettingsPage> {
     await _updateDefinition(definition, nameText, symbolText);
   }
 
-  Widget _buildDefinitionCard(StitchDefinition definition) {
+  Future<void> _setDisplayMode(StitchLabelDisplayMode mode) async {
+    try {
+      await _displaySettings.setDisplayMode(mode);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('表示方法の保存に失敗しました');
+    }
+  }
+
+  Widget _buildDisplayModeSection(StitchLabelDisplayMode displayMode) {
     final colorScheme = Theme.of(context).colorScheme;
-    final textColor = definition.enabled
-        ? null
-        : colorScheme.onSurface.withValues(alpha: 0.5);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '表示方法',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '設定一覧と編み図エディタの選択ボタンに共通で適用されます',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final segmented = SegmentedButton<StitchLabelDisplayMode>(
+                  segments: [
+                    for (final mode
+                        in StitchSettingsPage.selectableDisplayModes)
+                      ButtonSegment<StitchLabelDisplayMode>(
+                        value: mode,
+                        label: Text(mode.label),
+                      ),
+                  ],
+                  selected: {displayMode},
+                  onSelectionChanged: (selected) {
+                    if (selected.isEmpty) {
+                      return;
+                    }
+                    _setDisplayMode(selected.first);
+                  },
+                  showSelectedIcon: false,
+                  style: ButtonStyle(
+                    textStyle: WidgetStatePropertyAll(
+                      Theme.of(context).textTheme.labelLarge,
+                    ),
+                    visualDensity: VisualDensity.comfortable,
+                  ),
+                );
+
+                if (constraints.maxWidth < 360) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 360),
+                      child: segmented,
+                    ),
+                  );
+                }
+
+                return segmented;
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefinitionCard(
+    StitchDefinition definition,
+    StitchLabelDisplayMode displayMode,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final muted = !definition.enabled;
+    final foreground = muted
+        ? colorScheme.onSurface.withValues(alpha: 0.5)
+        : colorScheme.onSurface;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.fromLTRB(12, 10, 24, 10),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 左：記号
-            SizedBox(
-              width: 48,
-              child: Center(
-                child: Text(
-                  definition.symbol.isEmpty ? '—' : definition.symbol,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: textColor,
+            // 左：共通ラベル（表示方法に追従、公式ベクター対応）
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: StitchSymbolLabel(
+                  definition: definition,
+                  displayMode: displayMode,
+                  color: foreground,
+                  symbolExtent: 42,
+                  spacing: 7,
+                  maxNameWidth: 140,
+                  nameStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            // 中央：名称
-            Expanded(
-              child: Text(
-                definition.name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: textColor,
+            // 右端：編集 / 使用する（ウィンドウ幅に追従して常に右寄せ）
+            if (!definition.system)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () => _showEditDialog(definition),
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: '編集',
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
                     ),
+                  ),
+                  Switch(
+                    value: definition.enabled,
+                    onChanged: (value) => _setEnabled(definition, value),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '使用する',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: foreground,
+                        ),
+                  ),
+                ],
               ),
-            ),
-            if (!definition.system) ...[
-              // 編集ボタン
-              IconButton(
-                onPressed: () => _showEditDialog(definition),
-                icon: const Icon(Icons.edit_outlined),
-                tooltip: '編集',
-              ),
-              // 使用する Switch
-              Switch(
-                value: definition.enabled,
-                onChanged: (value) => _setEnabled(definition, value),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '使用する',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: textColor,
-                    ),
-              ),
-            ],
           ],
         ),
       ),
@@ -429,19 +539,33 @@ class _StitchSettingsPageState extends State<StitchSettingsPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      for (final definition in _definitions)
-                        _buildDefinitionCard(definition),
-                    ],
-                  ),
-                ),
-                _buildFooterNotes(),
-              ],
+          : ListenableBuilder(
+              listenable: _displaySettings,
+              builder: (context, _) {
+                final displayMode = _displaySettings.displayMode;
+                final effectiveMode =
+                    StitchSettingsPage.selectableDisplayModes.contains(
+                          displayMode,
+                        )
+                        ? displayMode
+                        : StitchLabelDisplayMode.symbolAndName;
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                        children: [
+                          _buildDisplayModeSection(effectiveMode),
+                          for (final definition in _definitions)
+                            _buildDefinitionCard(definition, effectiveMode),
+                        ],
+                      ),
+                    ),
+                    _buildFooterNotes(),
+                  ],
+                );
+              },
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _canAddMore ? _showAddDialog : null,

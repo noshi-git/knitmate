@@ -187,6 +187,19 @@ Win32Window::MessageHandler(HWND hwnd,
       }
       return 0;
 
+    // Minimum logical window size 720x500 (scaled for DPI).
+    case WM_GETMINMAXINFO: {
+      auto info = reinterpret_cast<MINMAXINFO*>(lparam);
+      UINT dpi = FlutterDesktopGetDpiForHWND(hwnd);
+      if (dpi == 0) {
+        dpi = 96;
+      }
+      const double scale_factor = dpi / 96.0;
+      info->ptMinTrackSize.x = Scale(720, scale_factor);
+      info->ptMinTrackSize.y = Scale(500, scale_factor);
+      return 0;
+    }
+
     case WM_DPICHANGED: {
       auto newRectSize = reinterpret_cast<RECT*>(lparam);
       LONG newWidth = newRectSize->right - newRectSize->left;

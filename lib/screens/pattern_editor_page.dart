@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../models/cell_change.dart';
 import '../models/project.dart';
 import '../models/stitch_definition.dart';
+import '../models/stitch_label_display_mode.dart';
 import '../services/project_storage_service.dart';
+import '../services/stitch_display_settings_service.dart';
 import '../services/stitch_settings_service.dart';
 import '../widgets/pattern_canvas.dart';
+import '../widgets/stitch_symbol_label.dart';
 
 class PatternEditorPage extends StatefulWidget {
   const PatternEditorPage({
@@ -361,44 +364,115 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Widget _buildStorageIndexButton(int storageIndex, String label) {
+  // 狭い画面では保存済み設定を変えず、表示だけシンボルのみへ寄せる
+  static const double _selectorNameMinWidth = 640;
+  static const double _selectorNameMinHeight = 560;
+
+  StitchLabelDisplayMode _effectiveSelectorMode({
+    required StitchLabelDisplayMode preferred,
+    required double width,
+    required double height,
+  }) {
+    if (preferred == StitchLabelDisplayMode.symbolOnly) {
+      return preferred;
+    }
+    if (width < _selectorNameMinWidth || height < _selectorNameMinHeight) {
+      return StitchLabelDisplayMode.symbolOnly;
+    }
+    return preferred;
+  }
+
+  Widget _buildStorageIndexButton({
+    required StitchDefinition definition,
+    required StitchLabelDisplayMode displayMode,
+    required ColorScheme colorScheme,
+  }) {
+    final selected = _selectedStorageIndex == definition.storageIndex;
+
     void onPressed() {
       setState(() {
-        _selectedStorageIndex = storageIndex;
+        _selectedStorageIndex = definition.storageIndex;
       });
     }
 
-    return _selectedStorageIndex == storageIndex
-        ? FilledButton(onPressed: onPressed, child: Text(label))
-        : OutlinedButton(onPressed: onPressed, child: Text(label));
-  }
+    final foreground =
+        selected ? colorScheme.onPrimary : colorScheme.onSurface;
+    final compactLabel = displayMode == StitchLabelDisplayMode.symbolOnly;
 
-  Widget _buildSymbolSelector() {
-    final emptyDefinition = _emptyDefinition;
-    final emptyLabel = emptyDefinition?.name ?? '空白';
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _buildStorageIndexButton(
-            StitchDefinition.emptyStorageIndex,
-            emptyLabel,
+    final label = StitchSymbolLabel(
+      definition: definition,
+      displayMode: displayMode,
+      color: foreground,
+      symbolExtent: compactLabel ? 32 : 34,
+      spacing: 5,
+      nameStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
-          const SizedBox(width: 8),
-          for (final definition in _selectableDefinitions) ...[
-            _buildStorageIndexButton(
-              definition.storageIndex,
-              '${definition.symbol} ${definition.name}',
-            ),
-            const SizedBox(width: 8),
-          ],
-        ],
+    );
+
+    final style = ButtonStyle(
+      padding: WidgetStatePropertyAll(
+        EdgeInsets.symmetric(
+          horizontal: compactLabel ? 10 : 12,
+          vertical: compactLabel ? 8 : 10,
+        ),
       ),
+      alignment: Alignment.center,
+      visualDensity: VisualDensity.standard,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+
+    if (selected) {
+      return FilledButton(
+        onPressed: onPressed,
+        style: style,
+        child: label,
+      );
+    }
+
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: style,
+      child: label,
     );
   }
 
-  Widget _buildSymbolSelectorArea() {
+  Widget _buildSymbolSelector(StitchLabelDisplayMode displayMode) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final emptyDefinition = _emptyDefinition ??
+        const StitchDefinition(
+          id: 'empty',
+          name: '空白',
+          symbol: '',
+          enabled: true,
+          system: true,
+          storageIndex: StitchDefinition.emptyStorageIndex,
+        );
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _buildStorageIndexButton(
+          definition: emptyDefinition,
+          displayMode: displayMode,
+          colorScheme: colorScheme,
+        ),
+        for (final definition in _selectableDefinitions)
+          _buildStorageIndexButton(
+            definition: definition,
+            displayMode: displayMode,
+            colorScheme: colorScheme,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSymbolSelectorArea({
+    required double maxHeight,
+    required StitchLabelDisplayMode displayMode,
+  }) {
     if (_isDefinitionsLoading) {
       return const SizedBox(
         height: 48,
@@ -412,59 +486,172 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
       );
     }
 
-    return _buildSymbolSelector();
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: SingleChildScrollView(
+        child: _buildSymbolSelector(displayMode),
+      ),
+    );
+  }
+
+  List<Widget> _buildAppBarActions({required bool compact}) {
+    final zoomOut = IconButton(
+      onPressed: _canZoomOut ? _zoomOut : null,
+      icon: const Text('－'),
+      tooltip: '縮小',
+    );
+    final zoomLabel = TextButton(
+      onPressed: _resetZoom,
+      child: Text(_zoomLabel),
+    );
+    final zoomIn = IconButton(
+      onPressed: _canZoomIn ? _zoomIn : null,
+      icon: const Text('＋'),
+      tooltip: '拡大',
+    );
+    final undo = IconButton(
+      onPressed: _undoChanges == null ? null : _undo,
+      icon: const Icon(Icons.undo),
+      tooltip: '元に戻す',
+    );
+
+    final saveIcon = _isSaving
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : const Icon(Icons.save_outlined);
+
+    if (compact) {
+      return [
+        IconButton(
+          onPressed: _canZoomOut ? _zoomOut : null,
+          icon: const Icon(Icons.remove),
+          tooltip: '縮小',
+        ),
+        IconButton(
+          onPressed: _resetZoom,
+          icon: Text(
+            _zoomLabel,
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          tooltip: 'ズームをリセット',
+        ),
+        IconButton(
+          onPressed: _canZoomIn ? _zoomIn : null,
+          icon: const Icon(Icons.add),
+          tooltip: '拡大',
+        ),
+        IconButton(
+          onPressed: _isSaving ? null : _savePattern,
+          icon: saveIcon,
+          tooltip: _isSaving ? '保存中' : '保存',
+        ),
+        undo,
+      ];
+    }
+
+    return [
+      zoomOut,
+      zoomLabel,
+      zoomIn,
+      TextButton.icon(
+        onPressed: _isSaving ? null : _savePattern,
+        icon: saveIcon,
+        label: Text(_isSaving ? '保存中' : '保存'),
+      ),
+      undo,
+    ];
+  }
+
+  PreferredSizeWidget _buildEditorAppBar(double width) {
+    final compact = width < 720;
+    final veryCompact = width < 560;
+
+    return AppBar(
+      automaticallyImplyLeading: false,
+      leading: IconButton(
+        onPressed: _goBack,
+        icon: const Icon(Icons.arrow_back),
+        tooltip: '戻る',
+      ),
+      title: Text(
+        '$_columns × $_rows',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      titleSpacing: compact ? 0 : NavigationToolbar.kMiddleSpacing,
+      actions: veryCompact
+          ? [
+              PopupMenuButton<_EditorAppBarAction>(
+                tooltip: 'メニュー',
+                onSelected: (action) {
+                  switch (action) {
+                    case _EditorAppBarAction.zoomOut:
+                      _zoomOut();
+                    case _EditorAppBarAction.zoomReset:
+                      _resetZoom();
+                    case _EditorAppBarAction.zoomIn:
+                      _zoomIn();
+                    case _EditorAppBarAction.save:
+                      _savePattern();
+                    case _EditorAppBarAction.undo:
+                      _undo();
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: _EditorAppBarAction.zoomOut,
+                    enabled: _canZoomOut,
+                    child: Text('縮小'),
+                  ),
+                  PopupMenuItem(
+                    value: _EditorAppBarAction.zoomReset,
+                    child: Text('ズーム $_zoomLabel'),
+                  ),
+                  PopupMenuItem(
+                    value: _EditorAppBarAction.zoomIn,
+                    enabled: _canZoomIn,
+                    child: Text('拡大'),
+                  ),
+                  PopupMenuItem(
+                    value: _EditorAppBarAction.save,
+                    enabled: !_isSaving,
+                    child: Text(_isSaving ? '保存中' : '保存'),
+                  ),
+                  PopupMenuItem(
+                    value: _EditorAppBarAction.undo,
+                    enabled: _undoChanges != null,
+                    child: const Text('元に戻す'),
+                  ),
+                ],
+              ),
+            ]
+          : _buildAppBarActions(compact: compact),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.sizeOf(context);
+    final width = media.width;
+    final height = media.height;
+    final selectorMaxHeight = (height * 0.34).clamp(72.0, 220.0);
+
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          onPressed: _goBack,
-          icon: const Icon(Icons.arrow_back),
-          tooltip: '戻る',
-        ),
-        title: Text('$_columns × $_rows'),
-        actions: [
-          IconButton(
-            onPressed: _canZoomOut ? _zoomOut : null,
-            icon: const Text('－'),
-            tooltip: '縮小',
-          ),
-          TextButton(
-            onPressed: _resetZoom,
-            child: Text(_zoomLabel),
-          ),
-          IconButton(
-            onPressed: _canZoomIn ? _zoomIn : null,
-            icon: const Text('＋'),
-            tooltip: '拡大',
-          ),
-          TextButton.icon(
-            onPressed: _isSaving ? null : _savePattern,
-            icon: _isSaving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: Text(_isSaving ? '保存中' : '保存'),
-          ),
-          IconButton(
-            onPressed: _undoChanges == null ? null : _undo,
-            icon: const Icon(Icons.undo),
-            tooltip: '元に戻す',
-          ),
-        ],
-      ),
+      appBar: _buildEditorAppBar(width),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            width < 480 ? 8 : 16,
+            width < 480 ? 8 : 16,
+            width < 480 ? 8 : 16,
+            0,
+          ),
+          child: Column(
+            children: [
+              Expanded(
                 child: PatternCanvas(
                   rows: _rows,
                   columns: _columns,
@@ -482,19 +669,43 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                   onZoomOut: _zoomOut,
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildSymbolSelectorArea(),
-                ],
+              ListenableBuilder(
+                listenable: StitchDisplaySettingsService.instance,
+                builder: (context, _) {
+                  final preferred =
+                      StitchDisplaySettingsService.instance.displayMode;
+                  final effectiveMode = _effectiveSelectorMode(
+                    preferred: preferred,
+                    width: width,
+                    height: height,
+                  );
+
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      width < 480 ? 8 : 12,
+                      0,
+                      width < 480 ? 8 : 16,
+                    ),
+                    child: _buildSymbolSelectorArea(
+                      maxHeight: selectorMaxHeight,
+                      displayMode: effectiveMode,
+                    ),
+                  );
+                },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+enum _EditorAppBarAction {
+  zoomOut,
+  zoomReset,
+  zoomIn,
+  save,
+  undo,
 }

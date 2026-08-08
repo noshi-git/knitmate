@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/stitch_definition.dart';
+import '../models/stitch_symbol_type.dart';
+import 'stitch_symbol/stitch_symbol_painter.dart';
 
 // 編み図本体の罫線と編み記号を描画する
 class PatternGridPainter extends CustomPainter {
@@ -20,6 +22,8 @@ class PatternGridPainter extends CustomPainter {
   final double cellSize;
   final ThemeData theme;
 
+  static const _symbolPainter = StitchSymbolPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
     final borderColor = theme.colorScheme.outline;
@@ -31,6 +35,7 @@ class PatternGridPainter extends CustomPainter {
 
     final baseStyle =
         theme.textTheme.bodyLarge ?? const TextStyle(fontSize: 16);
+    final symbolColor = theme.colorScheme.onSurface;
 
     // 横罫線と編み記号（上から rows → 1 の順）
     for (var displayIndex = 0; displayIndex < rows; displayIndex++) {
@@ -51,6 +56,7 @@ class PatternGridPainter extends CustomPainter {
           grid[row][column],
           cellRect,
           baseStyle,
+          symbolColor,
         );
       }
     }
@@ -73,19 +79,40 @@ class PatternGridPainter extends CustomPainter {
     }
   }
 
-  // 1マス分の編み記号を Canvas で描画する
+  // storageIndex → Definition → id → Type → Painter
   void _paintSymbol(
     Canvas canvas,
     int storageIndex,
     Rect cellRect,
     TextStyle baseStyle,
+    Color symbolColor,
   ) {
     if (storageIndex == StitchDefinition.emptyStorageIndex) {
       return;
     }
 
     final definition = definitionsByStorageIndex[storageIndex];
-    if (definition == null || definition.symbol.isEmpty) {
+    if (definition == null) {
+      return;
+    }
+
+    final type = StitchSymbolTypeMapper.fromId(definition.id);
+    if (type == StitchSymbolType.empty) {
+      return;
+    }
+
+    if (type != StitchSymbolType.unknown) {
+      _symbolPainter.paint(
+        canvas: canvas,
+        cellRect: cellRect,
+        type: type,
+        color: symbolColor,
+      );
+      return;
+    }
+
+    // unknown のみ既存の文字描画へフォールバック
+    if (definition.symbol.isEmpty) {
       return;
     }
 
