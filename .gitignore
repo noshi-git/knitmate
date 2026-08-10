@@ -49,3 +49,7 @@ official_symbols_source/
 
 # Dev-only contact sheet (regeneratable via tools/generate_symbol_assets.py)
 tools/symbol_assets_contact_sheet.png
+
+# Inno Setup installer output (regeneratable via installer/KnitMate.iss)
+installer/output/
+installer/Output/
