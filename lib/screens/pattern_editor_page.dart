@@ -404,6 +404,8 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
       displayMode: displayMode,
       color: foreground,
       symbolExtent: compactLabel ? 32 : 34,
+      symbolDisplayScale:
+          StitchDisplaySettingsService.instance.buttonSymbolScaleValue,
       spacing: 5,
       nameStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
@@ -649,38 +651,39 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
             width < 480 ? 8 : 16,
             0,
           ),
-          child: Column(
-            children: [
-              Expanded(
-                child: PatternCanvas(
-                  rows: _rows,
-                  columns: _columns,
-                  grid: _grid,
-                  definitionsByStorageIndex: _definitionsByStorageIndex,
-                  cellSize: PatternEditorPage.cellSize,
-                  rowNumberWidth: PatternEditorPage.rowNumberWidth,
-                  columnNumberHeight: PatternEditorPage.columnNumberHeight,
-                  theme: Theme.of(context),
-                  zoom: _zoom,
-                  onCellEdit: _onCellEdit,
-                  onEditStart: _startEditing,
-                  onEditEnd: _finishEditing,
-                  onZoomIn: _zoomIn,
-                  onZoomOut: _zoomOut,
-                ),
-              ),
-              ListenableBuilder(
-                listenable: StitchDisplaySettingsService.instance,
-                builder: (context, _) {
-                  final preferred =
-                      StitchDisplaySettingsService.instance.displayMode;
-                  final effectiveMode = _effectiveSelectorMode(
-                    preferred: preferred,
-                    width: width,
-                    height: height,
-                  );
+          child: ListenableBuilder(
+            listenable: StitchDisplaySettingsService.instance,
+            builder: (context, _) {
+              final displaySettings = StitchDisplaySettingsService.instance;
+              final preferred = displaySettings.displayMode;
+              final effectiveMode = _effectiveSelectorMode(
+                preferred: preferred,
+                width: width,
+                height: height,
+              );
 
-                  return Padding(
+              return Column(
+                children: [
+                  Expanded(
+                    child: PatternCanvas(
+                      rows: _rows,
+                      columns: _columns,
+                      grid: _grid,
+                      definitionsByStorageIndex: _definitionsByStorageIndex,
+                      cellSize: PatternEditorPage.cellSize,
+                      rowNumberWidth: PatternEditorPage.rowNumberWidth,
+                      columnNumberHeight: PatternEditorPage.columnNumberHeight,
+                      theme: Theme.of(context),
+                      cellSymbolScale: displaySettings.cellSymbolScaleValue,
+                      zoom: _zoom,
+                      onCellEdit: _onCellEdit,
+                      onEditStart: _startEditing,
+                      onEditEnd: _finishEditing,
+                      onZoomIn: _zoomIn,
+                      onZoomOut: _zoomOut,
+                    ),
+                  ),
+                  Padding(
                     padding: EdgeInsets.fromLTRB(
                       0,
                       width < 480 ? 8 : 12,
@@ -691,10 +694,10 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                       maxHeight: selectorMaxHeight,
                       displayMode: effectiveMode,
                     ),
-                  );
-                },
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

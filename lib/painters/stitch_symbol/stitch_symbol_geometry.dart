@@ -441,16 +441,25 @@ class StitchSymbolGeometry {
     return stems;
   }
 
-  void drawFan(
+  /// Fan of stems from [origin] upward. Returns outer/inner ends (normalized).
+  List<({Offset top, Offset bottom})> drawFan(
     Canvas canvas,
     Rect contentRect, {
     required Offset origin,
     required int spokeCount,
+    double? radius,
+    double? spreadAngle,
+    double? topBarWidth,
+    bool drawTopBars = true,
     bool mirrorHorizontal = false,
     bool mirrorVertical = false,
     double rotation = 0,
   }) {
     final count = math.max(1, spokeCount);
+    final spread = spreadAngle ?? metrics.fanSpreadAngle;
+    final length = radius ?? metrics.stemHeight * 0.72;
+    final barW = topBarWidth ?? metrics.topBarWidth * 0.38;
+    final stems = <({Offset top, Offset bottom})>[];
 
     _withTransform(
       canvas,
@@ -460,19 +469,135 @@ class StitchSymbolGeometry {
       mirrorVertical: mirrorVertical,
       rotation: rotation,
       draw: () {
-        final spread = metrics.fanSpreadAngle;
         final start = -spread / 2;
-        final radius = metrics.stemHeight;
         for (var i = 0; i < count; i++) {
           final t = count == 1 ? 0.5 : i / (count - 1);
+          // 0 = straight up; fans left/right symmetrically
           final angle = start + spread * t - math.pi / 2;
           final end = Offset(
-            origin.dx + math.cos(angle) * radius * 0.5,
-            origin.dy + math.sin(angle) * radius,
+            origin.dx + math.cos(angle) * length,
+            origin.dy + math.sin(angle) * length,
           );
           drawStem(canvas, contentRect, from: origin, to: end);
-          drawTopBar(canvas, contentRect, center: end);
+          if (drawTopBars) {
+            // Top bar perpendicular to the spoke (T tip)
+            final barAngle = angle + math.pi / 2;
+            final half = barW / 2;
+            canvas.drawLine(
+              mapPoint(
+                contentRect,
+                Offset(
+                  end.dx - math.cos(barAngle) * half,
+                  end.dy - math.sin(barAngle) * half,
+                ),
+              ),
+              mapPoint(
+                contentRect,
+                Offset(
+                  end.dx + math.cos(barAngle) * half,
+                  end.dy + math.sin(barAngle) * half,
+                ),
+              ),
+              _stroke,
+            );
+          }
+          stems.add((top: end, bottom: origin));
         }
+      },
+    );
+
+    return stems;
+  }
+
+  /// Smooth U / ∩ curve. [openingUp] true = ∪ (open at top).
+  void drawUCurve(
+    Canvas canvas,
+    Rect contentRect, {
+    required Offset center,
+    double? width,
+    double? height,
+    bool openingUp = true,
+    bool mirrorHorizontal = false,
+    bool mirrorVertical = false,
+    double rotation = 0,
+  }) {
+    final w = width ?? metrics.clusterWidth;
+    final h = height ?? metrics.clusterHeight * 0.85;
+
+    _withTransform(
+      canvas,
+      contentRect,
+      anchor: center,
+      mirrorHorizontal: mirrorHorizontal,
+      mirrorVertical: mirrorVertical,
+      rotation: rotation,
+      draw: () {
+        final left = Offset(center.dx - w / 2, center.dy - h / 2);
+        final right = Offset(center.dx + w / 2, center.dy - h / 2);
+        final bottom = Offset(center.dx, center.dy + h / 2);
+        final top = Offset(center.dx, center.dy - h / 2);
+        final path = Path();
+        if (openingUp) {
+          path
+            ..moveTo(mapPoint(contentRect, left).dx, mapPoint(contentRect, left).dy)
+            ..quadraticBezierTo(
+              mapPoint(contentRect, bottom).dx,
+              mapPoint(contentRect, bottom).dy,
+              mapPoint(contentRect, right).dx,
+              mapPoint(contentRect, right).dy,
+            );
+        } else {
+          path
+            ..moveTo(
+              mapPoint(contentRect, Offset(left.dx, center.dy + h / 2)).dx,
+              mapPoint(contentRect, Offset(left.dx, center.dy + h / 2)).dy,
+            )
+            ..quadraticBezierTo(
+              mapPoint(contentRect, top).dx,
+              mapPoint(contentRect, top).dy,
+              mapPoint(contentRect, Offset(right.dx, center.dy + h / 2)).dx,
+              mapPoint(contentRect, Offset(right.dx, center.dy + h / 2)).dy,
+            );
+        }
+        canvas.drawPath(path, _stroke);
+      },
+    );
+  }
+
+  /// Right triangle used for attach/cut yarn. Tip points bottom-left.
+  void drawTriangle(
+    Canvas canvas,
+    Rect contentRect, {
+    required Offset center,
+    double? size,
+    bool filled = false,
+    bool mirrorHorizontal = false,
+    bool mirrorVertical = false,
+    double rotation = 0,
+  }) {
+    final s = size ?? metrics.triangleSize;
+
+    _withTransform(
+      canvas,
+      contentRect,
+      anchor: center,
+      mirrorHorizontal: mirrorHorizontal,
+      mirrorVertical: mirrorVertical,
+      rotation: rotation,
+      draw: () {
+        // Tip bottom-left; hypotenuse top-left → bottom-right (公式画像準拠)
+        final tip = Offset(center.dx - s * 0.48, center.dy + s * 0.38);
+        final top = Offset(center.dx - s * 0.18, center.dy - s * 0.48);
+        final right = Offset(center.dx + s * 0.48, center.dy + s * 0.28);
+        final path = Path()
+          ..moveTo(mapPoint(contentRect, tip).dx, mapPoint(contentRect, tip).dy)
+          ..lineTo(mapPoint(contentRect, top).dx, mapPoint(contentRect, top).dy)
+          ..lineTo(
+            mapPoint(contentRect, right).dx,
+            mapPoint(contentRect, right).dy,
+          )
+          ..close();
+        canvas.drawPath(path, filled ? _fill : _stroke);
       },
     );
   }

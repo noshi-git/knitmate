@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../models/stitch_symbol_type.dart';
@@ -5,24 +7,42 @@ import 'catalog/step1_basic_symbols.dart';
 import 'catalog/step2_t_family_symbols.dart';
 import 'catalog/step3_inc_dec_symbols.dart';
 import 'catalog/step4_special_symbols.dart';
+import 'catalog/step5_other_symbols.dart';
+import 'stitch_symbol_display_scale.dart';
 import 'stitch_symbol_geometry.dart';
+import 'stitch_symbol_image_cache.dart';
 import 'stitch_symbol_metrics.dart';
 import 'stitch_symbol_style.dart';
 
-// 公式編み記号をベクター描画する
+// 公式編み記号を描画する（公式36種は PNG、ロールバック用 Vector コードは残置）
 class StitchSymbolPainter {
   const StitchSymbolPainter();
 
-  /// 公式 Type をベクター描画する。
+  static const _useOfficialImageAssets = true;
+
+  /// 公式 Type を PNG 描画する。
   /// [StitchSymbolType.unknown] / [StitchSymbolType.empty] の場合は描画せず false。
   bool paint({
     required Canvas canvas,
     required Rect cellRect,
     required StitchSymbolType type,
     required Color color,
+    double displayScale = StitchSymbolDisplayScale.preview,
   }) {
     if (type == StitchSymbolType.empty || type == StitchSymbolType.unknown) {
       return false;
+    }
+
+    if (_useOfficialImageAssets &&
+        StitchSymbolTypeMapper.hasOfficialImageAsset(type)) {
+      unawaited(StitchSymbolImageCache.ensureLoaded(type));
+      return StitchSymbolImageCache.paint(
+        canvas: canvas,
+        cellRect: cellRect,
+        type: type,
+        color: color,
+        displayScale: displayScale,
+      );
     }
 
     final metrics = StitchSymbolMetrics.forCell(cellRect.shortestSide);
@@ -209,6 +229,43 @@ class StitchSymbolPainter {
           contentRect,
           geometry,
         );
+        return true;
+      case StitchSymbolType.doubleCrochetFrontPost:
+        Step5OtherSymbols.paintDoubleCrochetFrontPost(
+          canvas,
+          contentRect,
+          geometry,
+        );
+        return true;
+      case StitchSymbolType.doubleCrochetBackPost:
+        Step5OtherSymbols.paintDoubleCrochetBackPost(
+          canvas,
+          contentRect,
+          geometry,
+        );
+        return true;
+      case StitchSymbolType.ringStitch:
+        Step5OtherSymbols.paintRingStitch(canvas, contentRect, geometry);
+        return true;
+      case StitchSymbolType.doubleCrochetShell5InStitch:
+        Step5OtherSymbols.paintDoubleCrochetShell5InStitch(
+          canvas,
+          contentRect,
+          geometry,
+        );
+        return true;
+      case StitchSymbolType.doubleCrochetShell5OverStitches:
+        Step5OtherSymbols.paintDoubleCrochetShell5OverStitches(
+          canvas,
+          contentRect,
+          geometry,
+        );
+        return true;
+      case StitchSymbolType.attachYarn:
+        Step5OtherSymbols.paintAttachYarn(canvas, contentRect, geometry);
+        return true;
+      case StitchSymbolType.cutYarn:
+        Step5OtherSymbols.paintCutYarn(canvas, contentRect, geometry);
         return true;
       case StitchSymbolType.empty:
       case StitchSymbolType.unknown:

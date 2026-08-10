@@ -1,0 +1,1142 @@
+{
+  "version": 1,
+  "sourceDir": "official_symbols_source",
+  "outputDir": "assets/symbols",
+  "canvasSize": 256,
+  "contentPaddingRatio": 0.14,
+  "targetContentSize": 184.32,
+  "globalScaleMethod": "targetContentSize / max(max(inkWidth, inkHeight) across all 36 symbols); each cropped ink bbox is scaled uniformly by globalScale and centered on a 256x256 transparent canvas (no per-symbol bbox fill).",
+  "globalScale": 1.3963636363636363,
+  "referenceMaxInkExtentPx": 132,
+  "referenceSymbol": {
+    "no": 34,
+    "id": "double_crochet_shell5_over_stitches",
+    "inkBbox": {
+      "left": 0,
+      "top": 0,
+      "right": 132,
+      "bottom": 119,
+      "width": 132,
+      "height": 119
+    }
+  },
+  "alphaConversionMethod": "Detect background color from corners/dominant color. For each pixel: ink = clamp((bgLum - pixelLum) / bgLum * 255) * (srcAlpha/255). Output RGB=(0,0,0) with computed alpha. White->alpha 0, black->alpha 255, gray anti-aliasing->intermediate alpha.",
+  "symbols": [
+    {
+      "no": 1,
+      "storageIndex": 1,
+      "id": "single_crochet",
+      "sourceFile": "01.gif",
+      "sourcePath": "official_symbols_source/01.gif",
+      "outputFile": "single_crochet.png",
+      "outputPath": "assets/symbols/single_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 32,
+        "height": 33
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 32,
+        "bottom": 32,
+        "width": 32,
+        "height": 32
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 179,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 2,
+      "storageIndex": 2,
+      "id": "double_crochet",
+      "sourceFile": "2.gif",
+      "sourcePath": "official_symbols_source/2.gif",
+      "outputFile": "double_crochet.png",
+      "outputPath": "assets/symbols/double_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 24,
+        "height": 89
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 24,
+        "bottom": 89,
+        "width": 24,
+        "height": 89
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 62,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 3,
+      "storageIndex": 3,
+      "id": "treble_crochet",
+      "sourceFile": "3.gif",
+      "sourcePath": "official_symbols_source/3.gif",
+      "outputFile": "treble_crochet.png",
+      "outputPath": "assets/symbols/treble_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 24,
+        "height": 110
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 23,
+        "bottom": 110,
+        "width": 23,
+        "height": 110
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 352,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 4,
+      "storageIndex": 4,
+      "id": "slip_stitch",
+      "sourceFile": "04.gif",
+      "sourcePath": "official_symbols_source/04.gif",
+      "outputFile": "slip_stitch.png",
+      "outputPath": "assets/symbols/slip_stitch.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 36,
+        "height": 13
+      },
+      "backgroundColor": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 36,
+        "bottom": 13,
+        "width": 36,
+        "height": 13
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 72,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 5,
+      "storageIndex": 5,
+      "id": "chain",
+      "sourceFile": "05.gif",
+      "sourcePath": "official_symbols_source/05.gif",
+      "outputFile": "chain.png",
+      "outputPath": "assets/symbols/chain.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 38,
+        "height": 14
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 1,
+        "top": 0,
+        "right": 38,
+        "bottom": 14,
+        "width": 37,
+        "height": 14
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 136,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 6,
+      "storageIndex": 6,
+      "id": "half_double_crochet",
+      "sourceFile": "6.gif",
+      "sourcePath": "official_symbols_source/6.gif",
+      "outputFile": "half_double_crochet.png",
+      "outputPath": "assets/symbols/half_double_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 24,
+        "height": 65
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 1,
+        "right": 24,
+        "bottom": 65,
+        "width": 24,
+        "height": 64
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 129,
+      "minInkAlpha": 47,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 7,
+      "storageIndex": 7,
+      "id": "single_crochet_inc2",
+      "sourceFile": "07.gif",
+      "sourcePath": "official_symbols_source/07.gif",
+      "outputFile": "single_crochet_inc2.png",
+      "outputPath": "assets/symbols/single_crochet_inc2.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 34,
+        "height": 33
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 34,
+        "bottom": 33,
+        "width": 34,
+        "height": 33
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 141,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 8,
+      "storageIndex": 8,
+      "id": "single_crochet_inc3",
+      "sourceFile": "08.gif",
+      "sourcePath": "official_symbols_source/08.gif",
+      "outputFile": "single_crochet_inc3.png",
+      "outputPath": "assets/symbols/single_crochet_inc3.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 62,
+        "height": 36
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 1,
+        "right": 62,
+        "bottom": 36,
+        "width": 62,
+        "height": 35
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 312,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 9,
+      "storageIndex": 9,
+      "id": "single_crochet_dec2",
+      "sourceFile": "09.gif",
+      "sourcePath": "official_symbols_source/09.gif",
+      "outputFile": "single_crochet_dec2.png",
+      "outputPath": "assets/symbols/single_crochet_dec2.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 34,
+        "height": 33
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 34,
+        "bottom": 33,
+        "width": 34,
+        "height": 33
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 141,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 10,
+      "storageIndex": 10,
+      "id": "half_double_crochet_inc2",
+      "sourceFile": "10.gif",
+      "sourcePath": "official_symbols_source/10.gif",
+      "outputFile": "half_double_crochet_inc2.png",
+      "outputPath": "assets/symbols/half_double_crochet_inc2.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 58,
+        "height": 63
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 57,
+        "bottom": 63,
+        "width": 57,
+        "height": 63
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 237,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 11,
+      "storageIndex": 11,
+      "id": "half_double_crochet_dec2",
+      "sourceFile": "11.gif",
+      "sourcePath": "official_symbols_source/11.gif",
+      "outputFile": "half_double_crochet_dec2.png",
+      "outputPath": "assets/symbols/half_double_crochet_dec2.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 36,
+        "height": 62
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 36,
+        "bottom": 62,
+        "width": 36,
+        "height": 62
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 272,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 12,
+      "storageIndex": 12,
+      "id": "double_crochet_inc2",
+      "sourceFile": "12.gif",
+      "sourcePath": "official_symbols_source/12.gif",
+      "outputFile": "double_crochet_inc2.png",
+      "outputPath": "assets/symbols/double_crochet_inc2.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 70,
+        "height": 87
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 70,
+        "bottom": 87,
+        "width": 70,
+        "height": 87
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 499,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 13,
+      "storageIndex": 13,
+      "id": "double_crochet_dec2",
+      "sourceFile": "13.gif",
+      "sourcePath": "official_symbols_source/13.gif",
+      "outputFile": "double_crochet_dec2.png",
+      "outputPath": "assets/symbols/double_crochet_dec2.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 56,
+        "height": 86
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 1,
+        "top": 0,
+        "right": 55,
+        "bottom": 86,
+        "width": 54,
+        "height": 86
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 453,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 14,
+      "storageIndex": 14,
+      "id": "treble_crochet_inc2",
+      "sourceFile": "14.gif",
+      "sourcePath": "official_symbols_source/14.gif",
+      "outputFile": "treble_crochet_inc2.png",
+      "outputPath": "assets/symbols/treble_crochet_inc2.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 81,
+        "height": 107
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 1,
+        "top": 0,
+        "right": 81,
+        "bottom": 107,
+        "width": 80,
+        "height": 107
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 668,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 15,
+      "storageIndex": 15,
+      "id": "treble_crochet_dec2",
+      "sourceFile": "15.gif",
+      "sourcePath": "official_symbols_source/15.gif",
+      "outputFile": "treble_crochet_dec2.png",
+      "outputPath": "assets/symbols/treble_crochet_dec2.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 65,
+        "height": 106
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 1,
+        "right": 65,
+        "bottom": 106,
+        "width": 65,
+        "height": 105
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 580,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 16,
+      "storageIndex": 16,
+      "id": "single_crochet_front_post",
+      "sourceFile": "16.gif",
+      "sourcePath": "official_symbols_source/16.gif",
+      "outputFile": "single_crochet_front_post.png",
+      "outputPath": "assets/symbols/single_crochet_front_post.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 28,
+        "height": 51
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 1,
+        "top": 1,
+        "right": 28,
+        "bottom": 51,
+        "width": 27,
+        "height": 50
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 286,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 17,
+      "storageIndex": 17,
+      "id": "single_crochet_back_post",
+      "sourceFile": "17.gif",
+      "sourcePath": "official_symbols_source/17.gif",
+      "outputFile": "single_crochet_back_post.png",
+      "outputPath": "assets/symbols/single_crochet_back_post.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 28,
+        "height": 50
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 1,
+        "top": 0,
+        "right": 28,
+        "bottom": 50,
+        "width": 27,
+        "height": 50
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 224,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 18,
+      "storageIndex": 18,
+      "id": "single_crochet_ch1_single_crochet",
+      "sourceFile": "18.gif",
+      "sourcePath": "official_symbols_source/18.gif",
+      "outputFile": "single_crochet_ch1_single_crochet.png",
+      "outputPath": "assets/symbols/single_crochet_ch1_single_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 49,
+        "height": 42
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 48,
+        "bottom": 42,
+        "width": 48,
+        "height": 42
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 303,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 19,
+      "storageIndex": 19,
+      "id": "single_crochet_ch2_single_crochet",
+      "sourceFile": "19.gif",
+      "sourcePath": "official_symbols_source/19.gif",
+      "outputFile": "single_crochet_ch2_single_crochet.png",
+      "outputPath": "assets/symbols/single_crochet_ch2_single_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 58,
+        "height": 50
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 58,
+        "bottom": 50,
+        "width": 58,
+        "height": 50
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 391,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 20,
+      "storageIndex": 20,
+      "id": "rib_single_crochet",
+      "sourceFile": "20.gif",
+      "sourcePath": "official_symbols_source/20.gif",
+      "outputFile": "rib_single_crochet.png",
+      "outputPath": "assets/symbols/rib_single_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 35,
+        "height": 40
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 35,
+        "bottom": 40,
+        "width": 35,
+        "height": 40
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 185,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 21,
+      "storageIndex": 21,
+      "id": "reverse_single_crochet",
+      "sourceFile": "21.gif",
+      "sourcePath": "official_symbols_source/21.gif",
+      "outputFile": "reverse_single_crochet.png",
+      "outputPath": "assets/symbols/reverse_single_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 33,
+        "height": 45
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 33,
+        "bottom": 45,
+        "width": 33,
+        "height": 45
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 200,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 22,
+      "storageIndex": 22,
+      "id": "twisted_single_crochet",
+      "sourceFile": "22.gif",
+      "sourcePath": "official_symbols_source/22.gif",
+      "outputFile": "twisted_single_crochet.png",
+      "outputPath": "assets/symbols/twisted_single_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 33,
+        "height": 52
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 33,
+        "bottom": 52,
+        "width": 33,
+        "height": 52
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 327,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 23,
+      "storageIndex": 23,
+      "id": "picot",
+      "sourceFile": "23.gif",
+      "sourcePath": "official_symbols_source/23.gif",
+      "outputFile": "picot.png",
+      "outputPath": "assets/symbols/picot.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 40,
+        "height": 44
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 1,
+        "top": 0,
+        "right": 40,
+        "bottom": 44,
+        "width": 39,
+        "height": 44
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 346,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 24,
+      "storageIndex": 24,
+      "id": "half_double_crochet_cluster3",
+      "sourceFile": "24.gif",
+      "sourcePath": "official_symbols_source/24.gif",
+      "outputFile": "half_double_crochet_cluster3.png",
+      "outputPath": "assets/symbols/half_double_crochet_cluster3.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 34,
+        "height": 64
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 34,
+        "bottom": 64,
+        "width": 34,
+        "height": 64
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 426,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 25,
+      "storageIndex": 25,
+      "id": "half_double_crochet_front_post",
+      "sourceFile": "25.gif",
+      "sourcePath": "official_symbols_source/25.gif",
+      "outputFile": "half_double_crochet_front_post.png",
+      "outputPath": "assets/symbols/half_double_crochet_front_post.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 32,
+        "height": 75
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 1,
+        "right": 32,
+        "bottom": 75,
+        "width": 32,
+        "height": 74
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 223,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 26,
+      "storageIndex": 26,
+      "id": "half_double_crochet_back_post",
+      "sourceFile": "26.gif",
+      "sourcePath": "official_symbols_source/26.gif",
+      "outputFile": "half_double_crochet_back_post.png",
+      "outputPath": "assets/symbols/half_double_crochet_back_post.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 32,
+        "height": 75
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 32,
+        "bottom": 75,
+        "width": 32,
+        "height": 75
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 189,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 27,
+      "storageIndex": 27,
+      "id": "crossed_double_crochet",
+      "sourceFile": "27.gif",
+      "sourcePath": "official_symbols_source/27.gif",
+      "outputFile": "crossed_double_crochet.png",
+      "outputPath": "assets/symbols/crossed_double_crochet.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 62,
+        "height": 86
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 62,
+        "bottom": 86,
+        "width": 62,
+        "height": 86
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 555,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 28,
+      "storageIndex": 28,
+      "id": "double_crochet_cluster3",
+      "sourceFile": "28.gif",
+      "sourcePath": "official_symbols_source/28.gif",
+      "outputFile": "double_crochet_cluster3.png",
+      "outputPath": "assets/symbols/double_crochet_cluster3.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 54,
+        "height": 90
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 54,
+        "bottom": 90,
+        "width": 54,
+        "height": 90
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 667,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 29,
+      "storageIndex": 29,
+      "id": "double_crochet_popcorn5",
+      "sourceFile": "29.gif",
+      "sourcePath": "official_symbols_source/29.gif",
+      "outputFile": "double_crochet_popcorn5.png",
+      "outputPath": "assets/symbols/double_crochet_popcorn5.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 66,
+        "height": 89
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 66,
+        "bottom": 89,
+        "width": 66,
+        "height": 89
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 955,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 30,
+      "storageIndex": 30,
+      "id": "double_crochet_front_post",
+      "sourceFile": "30.gif",
+      "sourcePath": "official_symbols_source/30.gif",
+      "outputFile": "double_crochet_front_post.png",
+      "outputPath": "assets/symbols/double_crochet_front_post.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 32,
+        "height": 88
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 32,
+        "bottom": 87,
+        "width": 32,
+        "height": 87
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 339,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 31,
+      "storageIndex": 31,
+      "id": "double_crochet_back_post",
+      "sourceFile": "31.gif",
+      "sourcePath": "official_symbols_source/31.gif",
+      "outputFile": "double_crochet_back_post.png",
+      "outputPath": "assets/symbols/double_crochet_back_post.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 32,
+        "height": 87
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 32,
+        "bottom": 87,
+        "width": 32,
+        "height": 87
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 333,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 32,
+      "storageIndex": 32,
+      "id": "ring_stitch",
+      "sourceFile": "32.gif",
+      "sourcePath": "official_symbols_source/32.gif",
+      "outputFile": "ring_stitch.png",
+      "outputPath": "assets/symbols/ring_stitch.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 52,
+        "height": 61
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 52,
+        "bottom": 60,
+        "width": 52,
+        "height": 60
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 529,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 33,
+      "storageIndex": 33,
+      "id": "double_crochet_shell5_in_stitch",
+      "sourceFile": "33.gif",
+      "sourcePath": "official_symbols_source/33.gif",
+      "outputFile": "double_crochet_shell5_in_stitch.png",
+      "outputPath": "assets/symbols/double_crochet_shell5_in_stitch.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 128,
+        "height": 106
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 128,
+        "bottom": 106,
+        "width": 128,
+        "height": 106
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 1150,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 34,
+      "storageIndex": 34,
+      "id": "double_crochet_shell5_over_stitches",
+      "sourceFile": "34.gif",
+      "sourcePath": "official_symbols_source/34.gif",
+      "outputFile": "double_crochet_shell5_over_stitches.png",
+      "outputPath": "assets/symbols/double_crochet_shell5_over_stitches.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 132,
+        "height": 119
+      },
+      "backgroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 132,
+        "bottom": 119,
+        "width": 132,
+        "height": 119
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 1378,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 35,
+      "storageIndex": 35,
+      "id": "attach_yarn",
+      "sourceFile": "35.gif",
+      "sourcePath": "official_symbols_source/35.gif",
+      "outputFile": "attach_yarn.png",
+      "outputPath": "assets/symbols/attach_yarn.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 40,
+        "height": 46
+      },
+      "backgroundColor": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 40,
+        "bottom": 46,
+        "width": 40,
+        "height": 46
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 230,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    },
+    {
+      "no": 36,
+      "storageIndex": 36,
+      "id": "cut_yarn",
+      "sourceFile": "36.gif",
+      "sourcePath": "official_symbols_source/36.gif",
+      "outputFile": "cut_yarn.png",
+      "outputPath": "assets/symbols/cut_yarn.png",
+      "anomalies": [],
+      "sourceSize": {
+        "width": 40,
+        "height": 46
+      },
+      "backgroundColor": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+      },
+      "inkBbox": {
+        "left": 0,
+        "top": 0,
+        "right": 40,
+        "bottom": 45,
+        "width": 40,
+        "height": 45
+      },
+      "hasGrayAntialiasing": true,
+      "intermediateAlphaPixels": 123,
+      "minInkAlpha": 15,
+      "maxInkAlpha": 255
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import '../stitch_symbol_geometry.dart';
+import '../vectors/double_crochet_inc2_vector_data.dart';
+import '../vectors/stitch_vector_painter.dart';
 import 'step2_t_family_symbols.dart';
 
 /// Per-symbol V / Λ proportions (normalized). Avoids one global V size.
@@ -11,6 +13,7 @@ class _IncDecVSpec {
     this.tickLength,
     this.tickAlongFromTop = 0.45,
     this.tickOutward = 0,
+    this.crossScale,
   });
 
   final double halfWidth;
@@ -20,31 +23,41 @@ class _IncDecVSpec {
 
   /// Shift yarn-over ticks outward from the leg (normalized).
   final double tickOutward;
+
+  /// Optional scale for the center X (SC inc3), relative to metrics.crossSize.
+  final double? crossScale;
 }
 
 // Step3: 増減記号の描画
 class Step3IncDecSymbols {
   Step3IncDecSymbols._();
 
-  // Official comparison ratios (content-normalized)
-  // SC opening widened ~8% from the previous fine pass
-  static const _scV = _IncDecVSpec(halfWidth: 0.181, height: 0.62);
-  static const _hdcIncV = _IncDecVSpec(halfWidth: 0.195, height: 0.70);
+  // SC inc2 / dec2 — slightly wider than prior 65° pass (official opening)
+  static const _scV = _IncDecVSpec(halfWidth: 0.425, height: 0.60);
+  // SC inc3 — keep ~90° V; larger center X so it is not buried
+  static const _scInc3V = _IncDecVSpec(
+    halfWidth: 0.455,
+    height: 0.455,
+    crossScale: 0.50,
+  );
+  // HDC inc2 — wider stance so independent top bars leave a center gap
+  static const _hdcIncV = _IncDecVSpec(halfWidth: 0.30, height: 0.70);
   // Keep the OK decrease look from the comparison sheet
   static const _hdcDecV = _IncDecVSpec(halfWidth: 0.22, height: 0.74);
+  // DC dec2 (unchanged)
   static const _dcV = _IncDecVSpec(
     halfWidth: 0.185,
     height: 0.74,
     tickLength: 0.20,
     tickAlongFromTop: 0.44,
-    tickOutward: 0.038,
+    tickOutward: 0.062,
   );
   static const _trV = _IncDecVSpec(
     halfWidth: 0.185,
     height: 0.76,
-    tickLength: 0.20,
+    tickLength: 0.24,
     tickAlongFromTop: 0.44,
-    tickOutward: 0.038,
+    tickOutward: 0.062,
   );
 
   // --- こま編み ---
@@ -70,13 +83,14 @@ class Step3IncDecSymbols {
     StitchSymbolGeometry geometry,
   ) {
     final metrics = geometry.metrics;
-    final halfWidth = _scV.halfWidth;
-    final height = _scV.height;
+    final halfWidth = _scInc3V.halfWidth;
+    final height = _scInc3V.height;
     final bottom = Offset(0.5, 0.5 + height / 2);
     final topY = bottom.dy - height;
-    // Official: X sits near the top opening; short stem from X center to V tip
-    final xSize = metrics.crossSize * 0.36;
-    final xCenter = Offset(0.5, topY + xSize * 0.42);
+    // Center stem + X on x=0.5; X at arm-top level (not crushed in wide V)
+    final xSize = metrics.crossSize * (_scInc3V.crossScale ?? 0.42);
+    final xCenter = Offset(0.5, topY);
+    final stemTop = Offset(0.5, topY);
 
     geometry.drawV(
       canvas,
@@ -88,7 +102,7 @@ class Step3IncDecSymbols {
     geometry.drawStem(
       canvas,
       contentRect,
-      from: xCenter,
+      from: stemTop,
       to: bottom,
     );
     geometry.drawX(
@@ -153,13 +167,14 @@ class Step3IncDecSymbols {
     Rect contentRect,
     StitchSymbolGeometry geometry,
   ) {
-    _paintTallInc2(
-      canvas,
-      contentRect,
-      geometry,
-      spec: _dcV,
-      yarnOverCount: 1,
-      spanTopBar: false,
+    // No.12 Path: independent top bars; both ticks are screen "\"
+    const StitchVectorPainter().paint(
+      canvas: canvas,
+      contentRect: contentRect,
+      viewBox: DoubleCrochetInc2VectorData.viewBox,
+      layers: DoubleCrochetInc2VectorData.layers,
+      color: geometry.style.color,
+      strokeWidth: geometry.metrics.strokeWidth,
     );
   }
 
@@ -234,11 +249,12 @@ class Step3IncDecSymbols {
     );
 
     if (spanTopBar) {
+      // Continuous bar: slightly past outer legs (No.12 official)
       geometry.drawTopBar(
         canvas,
         contentRect,
         center: Offset(0.5, topY),
-        width: halfWidth * 2,
+        width: halfWidth * 2 + metrics.topBarWidth * 0.48,
       );
     } else {
       // Independent top bars with a visible center gap

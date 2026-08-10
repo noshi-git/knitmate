@@ -13,6 +13,7 @@ class PatternGridPainter extends CustomPainter {
     required this.definitionsByStorageIndex,
     required this.cellSize,
     required this.theme,
+    required this.cellSymbolScale,
   });
 
   final int rows;
@@ -21,6 +22,7 @@ class PatternGridPainter extends CustomPainter {
   final Map<int, StitchDefinition> definitionsByStorageIndex;
   final double cellSize;
   final ThemeData theme;
+  final double cellSymbolScale;
 
   static const _symbolPainter = StitchSymbolPainter();
 
@@ -107,6 +109,7 @@ class PatternGridPainter extends CustomPainter {
         cellRect: cellRect,
         type: type,
         color: symbolColor,
+        displayScale: cellSymbolScale,
       );
       return;
     }

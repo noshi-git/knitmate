@@ -1,34 +1,64 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/stitch_definition.dart';
 import '../models/stitch_symbol_type.dart';
+import '../painters/stitch_symbol/stitch_symbol_display_scale.dart';
+import '../painters/stitch_symbol/stitch_symbol_image_cache.dart';
 import '../painters/stitch_symbol/stitch_symbol_painter.dart';
 
-// 設定画面などで使う編み記号プレビュー（公式はベクター、unknown のみ文字）
-class StitchSymbolPreview extends StatelessWidget {
+// 設定画面などで使う編み記号プレビュー（公式は PNG、unknown のみ文字）
+class StitchSymbolPreview extends StatefulWidget {
   const StitchSymbolPreview({
     super.key,
     required this.definition,
     this.size = const Size(32, 32),
     this.color,
+    this.displayScale = StitchSymbolDisplayScale.preview,
   });
 
   final StitchDefinition definition;
   final Size size;
   final Color? color;
+  final double displayScale;
+
+  @override
+  State<StitchSymbolPreview> createState() => _StitchSymbolPreviewState();
+}
+
+class _StitchSymbolPreviewState extends State<StitchSymbolPreview> {
+  @override
+  void initState() {
+    super.initState();
+    final type = StitchSymbolTypeMapper.fromId(widget.definition.id);
+    if (StitchSymbolTypeMapper.hasOfficialImageAsset(type)) {
+      StitchSymbolImageCache.addOnLoadedListener(_onSymbolImageLoaded);
+      if (!StitchSymbolImageCache.isLoaded(type)) {
+        unawaited(StitchSymbolImageCache.ensureLoaded(type));
+      }
+    }
+  }
+
+  void _onSymbolImageLoaded() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final foreground =
-        color ?? Theme.of(context).colorScheme.onSurface;
+        widget.color ?? Theme.of(context).colorScheme.onSurface;
 
     return SizedBox(
-      width: size.width,
-      height: size.height,
+      width: widget.size.width,
+      height: widget.size.height,
       child: CustomPaint(
         painter: _StitchSymbolPreviewPainter(
-          definition: definition,
+          definition: widget.definition,
           color: foreground,
+          displayScale: widget.displayScale,
           textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: foreground,
                 height: 1.0,
@@ -43,11 +73,13 @@ class _StitchSymbolPreviewPainter extends CustomPainter {
   _StitchSymbolPreviewPainter({
     required this.definition,
     required this.color,
+    required this.displayScale,
     required this.textStyle,
   });
 
   final StitchDefinition definition;
   final Color color;
+  final double displayScale;
   final TextStyle? textStyle;
 
   static const _symbolPainter = StitchSymbolPainter();
@@ -67,6 +99,7 @@ class _StitchSymbolPreviewPainter extends CustomPainter {
         cellRect: cellRect,
         type: type,
         color: color,
+        displayScale: displayScale,
       );
       return;
     }
@@ -100,6 +133,7 @@ class _StitchSymbolPreviewPainter extends CustomPainter {
     return oldDelegate.definition.id != definition.id ||
         oldDelegate.definition.symbol != definition.symbol ||
         oldDelegate.color != color ||
+        oldDelegate.displayScale != displayScale ||
         oldDelegate.textStyle != textStyle;
   }
 }

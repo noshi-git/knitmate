@@ -55,6 +55,17 @@ class StitchSettingsService {
         StitchDefinition.doubleCrochetCluster3StorageIndex,
     'double_crochet_popcorn5':
         StitchDefinition.doubleCrochetPopcorn5StorageIndex,
+    'double_crochet_front_post':
+        StitchDefinition.doubleCrochetFrontPostStorageIndex,
+    'double_crochet_back_post':
+        StitchDefinition.doubleCrochetBackPostStorageIndex,
+    'ring_stitch': StitchDefinition.ringStitchStorageIndex,
+    'double_crochet_shell5_in_stitch':
+        StitchDefinition.doubleCrochetShell5InStitchStorageIndex,
+    'double_crochet_shell5_over_stitches':
+        StitchDefinition.doubleCrochetShell5OverStitchesStorageIndex,
+    'attach_yarn': StitchDefinition.attachYarnStorageIndex,
+    'cut_yarn': StitchDefinition.cutYarnStorageIndex,
   };
 
   // 保存先ファイルを取得する（フォルダがなければ作成）
@@ -79,6 +90,13 @@ class StitchSettingsService {
       }
     }
     return maxIndex + 1;
+  }
+
+  /// 開発用カタログ向け: 公式36記号（empty を除く）を返す
+  List<StitchDefinition> officialCatalogDefinitions() {
+    return _createDefaultDefinitions()
+        .where((definition) => definition.id != 'empty')
+        .toList(growable: false);
   }
 
   // 初回起動時に使うデフォルトの編み記号一覧
@@ -295,6 +313,22 @@ class StitchSettingsService {
         storageIndex: StitchDefinition.doubleCrochetPopcorn5StorageIndex,
       ),
       StitchDefinition(
+        id: 'double_crochet_front_post',
+        name: '長編み表引き上げ編み',
+        symbol: '',
+        enabled: true,
+        system: false,
+        storageIndex: StitchDefinition.doubleCrochetFrontPostStorageIndex,
+      ),
+      StitchDefinition(
+        id: 'double_crochet_back_post',
+        name: '長編み裏引き上げ編み',
+        symbol: '',
+        enabled: true,
+        system: false,
+        storageIndex: StitchDefinition.doubleCrochetBackPostStorageIndex,
+      ),
+      StitchDefinition(
         id: 'treble_crochet',
         name: '長々編み',
         symbol: '',
@@ -319,6 +353,47 @@ class StitchSettingsService {
         storageIndex: StitchDefinition.trebleCrochetDec2StorageIndex,
       ),
       StitchDefinition(
+        id: 'ring_stitch',
+        name: 'リング編み',
+        symbol: '',
+        enabled: true,
+        system: false,
+        storageIndex: StitchDefinition.ringStitchStorageIndex,
+      ),
+      StitchDefinition(
+        id: 'double_crochet_shell5_in_stitch',
+        name: '長編み5目を前段の1目に編み入れる',
+        symbol: '',
+        enabled: true,
+        system: false,
+        storageIndex: StitchDefinition.doubleCrochetShell5InStitchStorageIndex,
+      ),
+      StitchDefinition(
+        id: 'double_crochet_shell5_over_stitches',
+        name: '前段の目を束にすくって長編み5目編む',
+        symbol: '',
+        enabled: true,
+        system: false,
+        storageIndex:
+            StitchDefinition.doubleCrochetShell5OverStitchesStorageIndex,
+      ),
+      StitchDefinition(
+        id: 'attach_yarn',
+        name: '糸をつける',
+        symbol: '',
+        enabled: true,
+        system: false,
+        storageIndex: StitchDefinition.attachYarnStorageIndex,
+      ),
+      StitchDefinition(
+        id: 'cut_yarn',
+        name: '糸を切る',
+        symbol: '',
+        enabled: true,
+        system: false,
+        storageIndex: StitchDefinition.cutYarnStorageIndex,
+      ),
+      StitchDefinition(
         id: 'slip_stitch',
         name: '引き抜き編み',
         symbol: '',
@@ -341,7 +416,7 @@ class StitchSettingsService {
     }
 
     var nextCustomIndex = usedIndexes.isEmpty
-        ? StitchDefinition.doubleCrochetPopcorn5StorageIndex + 1
+        ? StitchDefinition.cutYarnStorageIndex + 1
         : usedIndexes.reduce((a, b) => a > b ? a : b) + 1;
 
     for (final definition in definitions) {

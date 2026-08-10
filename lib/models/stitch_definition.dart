@@ -58,6 +58,13 @@ class StitchDefinition {
   static const int crossedDoubleCrochetStorageIndex = 27;
   static const int doubleCrochetCluster3StorageIndex = 28;
   static const int doubleCrochetPopcorn5StorageIndex = 29;
+  static const int doubleCrochetFrontPostStorageIndex = 30;
+  static const int doubleCrochetBackPostStorageIndex = 31;
+  static const int ringStitchStorageIndex = 32;
+  static const int doubleCrochetShell5InStitchStorageIndex = 33;
+  static const int doubleCrochetShell5OverStitchesStorageIndex = 34;
+  static const int attachYarnStorageIndex = 35;
+  static const int cutYarnStorageIndex = 36;
 
   // ユーザー追加用のIDを生成する
   static String generateId() {

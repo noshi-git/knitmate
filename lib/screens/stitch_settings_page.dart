@@ -5,6 +5,7 @@ import '../models/stitch_label_display_mode.dart';
 import '../models/stitch_symbol_type.dart';
 import '../services/stitch_display_settings_service.dart';
 import '../services/stitch_settings_service.dart';
+import '../painters/stitch_symbol/stitch_symbol_display_scale.dart';
 import '../widgets/stitch_symbol_label.dart';
 
 // 編み記号の名称・表示記号を編集する画面
@@ -458,6 +459,7 @@ class _StitchSettingsPageState extends State<StitchSettingsPage> {
                   displayMode: displayMode,
                   color: foreground,
                   symbolExtent: 42,
+                  symbolDisplayScale: StitchSymbolDisplayScale.settingsList,
                   spacing: 7,
                   maxNameWidth: 140,
                   nameStyle: Theme.of(context).textTheme.titleSmall?.copyWith(

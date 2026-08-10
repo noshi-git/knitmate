@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Official GIF sources (local only; used to regenerate PNG assets)
+official_symbols_source/
+
+# Dev-only contact sheet (regeneratable via tools/generate_symbol_assets.py)
+tools/symbol_assets_contact_sheet.png

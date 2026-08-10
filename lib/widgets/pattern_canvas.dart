@@ -6,6 +6,7 @@ import '../models/stitch_definition.dart';
 import '../painters/pattern_column_header_painter.dart';
 import '../painters/pattern_grid_painter.dart';
 import '../painters/pattern_row_header_painter.dart';
+import '../painters/stitch_symbol/stitch_symbol_image_cache.dart';
 
 // 編み図の表示とポインター入力を担当する
 class PatternCanvas extends StatefulWidget {
@@ -19,6 +20,7 @@ class PatternCanvas extends StatefulWidget {
     required this.rowNumberWidth,
     required this.columnNumberHeight,
     required this.theme,
+    required this.cellSymbolScale,
     this.zoom = 1.0,
     required this.onCellEdit,
     this.onEditStart,
@@ -35,6 +37,7 @@ class PatternCanvas extends StatefulWidget {
   final double rowNumberWidth;
   final double columnNumberHeight;
   final ThemeData theme;
+  final double cellSymbolScale;
   final double zoom;
   final void Function(int row, int column) onCellEdit;
   final VoidCallback? onEditStart;
@@ -76,6 +79,14 @@ class _PatternCanvasState extends State<PatternCanvas> {
     _horizontalHeaderController.addListener(_syncHorizontalFromHeader);
     _verticalGridController.addListener(_syncVerticalFromGrid);
     _verticalHeaderController.addListener(_syncVerticalFromHeader);
+
+    StitchSymbolImageCache.addOnLoadedListener(_onSymbolImageLoaded);
+  }
+
+  void _onSymbolImageLoaded() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -313,6 +324,7 @@ class _PatternCanvasState extends State<PatternCanvas> {
               definitionsByStorageIndex: widget.definitionsByStorageIndex,
               cellSize: _scaledCellSize,
               theme: widget.theme,
+              cellSymbolScale: widget.cellSymbolScale,
             ),
           ),
         ),

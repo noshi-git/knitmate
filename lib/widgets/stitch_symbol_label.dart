@@ -4,6 +4,7 @@ import '../models/stitch_definition.dart';
 import '../models/stitch_label_display_mode.dart';
 import '../models/stitch_symbol_type.dart';
 import '../utils/stitch_display_name.dart';
+import '../painters/stitch_symbol/stitch_symbol_display_scale.dart';
 import 'stitch_symbol_preview.dart';
 
 // シンボル / 名前を表示モードに応じて並べる共通ラベル
@@ -15,6 +16,7 @@ class StitchSymbolLabel extends StatelessWidget {
     required this.displayMode,
     this.color,
     this.symbolExtent = 38,
+    this.symbolDisplayScale = StitchSymbolDisplayScale.preview,
     this.nameStyle,
     this.spacing = 6,
     this.maxNameWidth,
@@ -24,6 +26,7 @@ class StitchSymbolLabel extends StatelessWidget {
   final StitchLabelDisplayMode displayMode;
   final Color? color;
   final double symbolExtent;
+  final double symbolDisplayScale;
   final TextStyle? nameStyle;
   final double spacing;
 
@@ -82,6 +85,7 @@ class StitchSymbolLabel extends StatelessWidget {
       definition: definition,
       size: Size(symbolExtent, symbolExtent),
       color: foreground,
+      displayScale: symbolDisplayScale,
     );
   }
 

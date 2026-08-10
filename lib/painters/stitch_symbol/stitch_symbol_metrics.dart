@@ -16,6 +16,8 @@ class StitchSymbolMetrics {
     required this.crossSize,
     required this.vHalfWidth,
     required this.vHeight,
+    required this.vInc3HalfWidth,
+    required this.vInc3Height,
     required this.hookRadius,
     required this.hookSweep,
     required this.clusterWidth,
@@ -48,8 +50,12 @@ class StitchSymbolMetrics {
 
   // X / V
   final double crossSize;
+  /// SC inc2 / dec2 default V (interior ≈ 65°)
   final double vHalfWidth;
   final double vHeight;
+  /// SC inc3 wider V (interior ≈ 90°)
+  final double vInc3HalfWidth;
+  final double vInc3Height;
 
   // フック
   final double hookRadius;
@@ -85,18 +91,21 @@ class StitchSymbolMetrics {
       ovalWidth: 0.62,
       ovalHeight: 0.28,
       crossSize: 0.56,
-      // Sharper V / inverse-V to match official increase/decrease ratios
-      vHalfWidth: 0.22,
-      vHeight: 0.74,
+      // Official SC V / Λ interior ≈ 65° (2*atan(halfWidth/height))
+      vHalfWidth: 0.385,
+      vHeight: 0.605,
+      // Official SC inc3 wider V ≈ 90°
+      vInc3HalfWidth: 0.455,
+      vInc3Height: 0.455,
       hookRadius: 0.16,
       hookSweep: math.pi,
       clusterWidth: 0.48,
       clusterHeight: 0.64,
-      fanSpreadAngle: math.pi * 0.7,
+      fanSpreadAngle: math.pi * 0.62,
       smallLoopRadius: 0.08,
       underBarWidth: 0.5,
       wavyAmplitude: 0.06,
-      triangleSize: 0.42,
+      triangleSize: 0.46,
     );
   }
 }

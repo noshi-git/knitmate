@@ -1,4 +1,4 @@
-// 公式編み記号の種類（Step1〜Step4）
+// 公式編み記号の種類（Step1〜Step5 / 公式36種）
 enum StitchSymbolType {
   empty,
 
@@ -38,6 +38,15 @@ enum StitchSymbolType {
   crossedDoubleCrochet,
   doubleCrochetCluster3,
   doubleCrochetPopcorn5,
+
+  // Step5
+  doubleCrochetFrontPost,
+  doubleCrochetBackPost,
+  ringStitch,
+  doubleCrochetShell5InStitch,
+  doubleCrochetShell5OverStitches,
+  attachYarn,
+  cutYarn,
 
   /// 公式マップにない id。文字描画へフォールバックする
   unknown,
@@ -81,6 +90,19 @@ class StitchSymbolTypeMapper {
     'crossed_double_crochet': StitchSymbolType.crossedDoubleCrochet,
     'double_crochet_cluster3': StitchSymbolType.doubleCrochetCluster3,
     'double_crochet_popcorn5': StitchSymbolType.doubleCrochetPopcorn5,
+    'double_crochet_front_post': StitchSymbolType.doubleCrochetFrontPost,
+    'double_crochet_back_post': StitchSymbolType.doubleCrochetBackPost,
+    'ring_stitch': StitchSymbolType.ringStitch,
+    'double_crochet_shell5_in_stitch':
+        StitchSymbolType.doubleCrochetShell5InStitch,
+    'double_crochet_shell5_over_stitches':
+        StitchSymbolType.doubleCrochetShell5OverStitches,
+    'attach_yarn': StitchSymbolType.attachYarn,
+    'cut_yarn': StitchSymbolType.cutYarn,
+  };
+
+  static final Map<StitchSymbolType, String> _typeToId = {
+    for (final entry in _idToType.entries) entry.value: entry.key,
   };
 
   // 未知の id は unknown を返す
@@ -88,8 +110,19 @@ class StitchSymbolTypeMapper {
     return _idToType[id] ?? StitchSymbolType.unknown;
   }
 
+  // 公式 Type 向け id（empty / unknown は null）
+  static String? idFor(StitchSymbolType type) {
+    return _typeToId[type];
+  }
+
   // 公式 Type かどうか（unknown 以外）
   static bool isOfficial(StitchSymbolType type) {
     return type != StitchSymbolType.unknown;
+  }
+
+  // PNG アセットを持つ公式 Type かどうか（empty 以外）
+  static bool hasOfficialImageAsset(StitchSymbolType type) {
+    return type != StitchSymbolType.empty &&
+        type != StitchSymbolType.unknown;
   }
 }
