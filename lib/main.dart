@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_route_observer.dart';
 import 'screens/counter_page.dart';
 import 'screens/project_list_page.dart';
 import 'screens/settings_page.dart';
@@ -18,6 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'KnitMate',
+      navigatorObservers: [knitMateRouteObserver],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../app_route_observer.dart';
 import '../models/cell_change.dart';
 import '../models/project.dart';
 import '../models/stitch_definition.dart';
@@ -7,8 +9,10 @@ import '../models/stitch_label_display_mode.dart';
 import '../services/project_storage_service.dart';
 import '../services/stitch_display_settings_service.dart';
 import '../services/stitch_settings_service.dart';
+import '../utils/stitch_shortcut_key.dart';
 import '../widgets/pattern_canvas.dart';
-import '../widgets/stitch_symbol_label.dart';
+import '../widgets/stitch_selector_button.dart';
+import 'stitch_settings_page.dart';
 
 class PatternEditorPage extends StatefulWidget {
   const PatternEditorPage({
@@ -31,7 +35,7 @@ class PatternEditorPage extends StatefulWidget {
   State<PatternEditorPage> createState() => _PatternEditorPageState();
 }
 
-class _PatternEditorPageState extends State<PatternEditorPage> {
+class _PatternEditorPageState extends State<PatternEditorPage> with RouteAware {
   final ProjectStorageService _storage = ProjectStorageService();
   final StitchSettingsService _stitchSettingsService = StitchSettingsService();
 
@@ -48,6 +52,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   List<CellChange>? _undoChanges;
   List<CellChange>? _gestureChanges;
   bool _isSaving = false;
+  final FocusNode _shortcutFocusNode = FocusNode(debugLabel: 'pattern_editor');
 
   // ズーム倍率（6段階）
   static const List<double> _zoomLevels = [
@@ -106,6 +111,28 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     super.initState();
     // グリッドは widget から同期的に決められるため、build 前に必ず初期化する
     _initializeGridSync();
+    _loadDefinitions();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      knitMateRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    knitMateRouteObserver.unsubscribe(this);
+    _shortcutFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // 設定画面などから戻った際に編み記号定義を再読込する
     _loadDefinitions();
   }
 
@@ -364,6 +391,45 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  bool _isTextInputFocused() {
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus == null || focus == _shortcutFocusNode) {
+      return false;
+    }
+    final focusContext = focus.context;
+    if (focusContext == null) {
+      return false;
+    }
+    return focusContext.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
+
+  KeyEventResult _handleShortcutKey(FocusNode node, KeyEvent event) {
+    if (_isTextInputFocused()) {
+      return KeyEventResult.ignored;
+    }
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (StitchShortcutKey.hasModifierPressed(event)) {
+      return KeyEventResult.ignored;
+    }
+
+    final definition = StitchShortcutKey.findDefinitionForKeyEvent(
+      definitions: _definitions,
+      event: event,
+    );
+    if (definition == null) {
+      return KeyEventResult.ignored;
+    }
+
+    if (_selectedStorageIndex != definition.storageIndex) {
+      setState(() {
+        _selectedStorageIndex = definition.storageIndex;
+      });
+    }
+    return KeyEventResult.handled;
+  }
+
   // 狭い画面では保存済み設定を変えず、表示だけシンボルのみへ寄せる
   static const double _selectorNameMinWidth = 640;
   static const double _selectorNameMinHeight = 560;
@@ -385,62 +451,20 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
   Widget _buildStorageIndexButton({
     required StitchDefinition definition,
     required StitchLabelDisplayMode displayMode,
-    required ColorScheme colorScheme,
   }) {
-    final selected = _selectedStorageIndex == definition.storageIndex;
-
-    void onPressed() {
-      setState(() {
-        _selectedStorageIndex = definition.storageIndex;
-      });
-    }
-
-    final foreground =
-        selected ? colorScheme.onPrimary : colorScheme.onSurface;
-    final compactLabel = displayMode == StitchLabelDisplayMode.symbolOnly;
-
-    final label = StitchSymbolLabel(
+    return StitchSelectorButton(
       definition: definition,
+      selected: _selectedStorageIndex == definition.storageIndex,
       displayMode: displayMode,
-      color: foreground,
-      symbolExtent: compactLabel ? 32 : 34,
-      symbolDisplayScale:
-          StitchDisplaySettingsService.instance.buttonSymbolScaleValue,
-      spacing: 5,
-      nameStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-          ),
-    );
-
-    final style = ButtonStyle(
-      padding: WidgetStatePropertyAll(
-        EdgeInsets.symmetric(
-          horizontal: compactLabel ? 10 : 12,
-          vertical: compactLabel ? 8 : 10,
-        ),
-      ),
-      alignment: Alignment.center,
-      visualDensity: VisualDensity.standard,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-
-    if (selected) {
-      return FilledButton(
-        onPressed: onPressed,
-        style: style,
-        child: label,
-      );
-    }
-
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: style,
-      child: label,
+      onPressed: () {
+        setState(() {
+          _selectedStorageIndex = definition.storageIndex;
+        });
+      },
     );
   }
 
   Widget _buildSymbolSelector(StitchLabelDisplayMode displayMode) {
-    final colorScheme = Theme.of(context).colorScheme;
     final emptyDefinition = _emptyDefinition ??
         const StitchDefinition(
           id: 'empty',
@@ -459,13 +483,11 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
         _buildStorageIndexButton(
           definition: emptyDefinition,
           displayMode: displayMode,
-          colorScheme: colorScheme,
         ),
         for (final definition in _selectableDefinitions)
           _buildStorageIndexButton(
             definition: definition,
             displayMode: displayMode,
-            colorScheme: colorScheme,
           ),
       ],
     );
@@ -494,6 +516,17 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
         child: _buildSymbolSelector(displayMode),
       ),
     );
+  }
+
+  Future<void> _openStitchSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const StitchSettingsPage(),
+      ),
+    );
+    if (mounted) {
+      await _loadDefinitions();
+    }
   }
 
   List<Widget> _buildAppBarActions({required bool compact}) {
@@ -525,8 +558,15 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
           )
         : const Icon(Icons.save_outlined);
 
+    final stitchSettings = IconButton(
+      onPressed: _openStitchSettings,
+      icon: const Icon(Icons.palette_outlined),
+      tooltip: '編み記号設定',
+    );
+
     if (compact) {
       return [
+        stitchSettings,
         IconButton(
           onPressed: _canZoomOut ? _zoomOut : null,
           icon: const Icon(Icons.remove),
@@ -555,6 +595,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
     }
 
     return [
+      stitchSettings,
       zoomOut,
       zoomLabel,
       zoomIn,
@@ -590,6 +631,8 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                 tooltip: 'メニュー',
                 onSelected: (action) {
                   switch (action) {
+                    case _EditorAppBarAction.stitchSettings:
+                      _openStitchSettings();
                     case _EditorAppBarAction.zoomOut:
                       _zoomOut();
                     case _EditorAppBarAction.zoomReset:
@@ -603,6 +646,10 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
                   }
                 },
                 itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: _EditorAppBarAction.stitchSettings,
+                    child: Text('編み記号設定'),
+                  ),
                   PopupMenuItem(
                     value: _EditorAppBarAction.zoomOut,
                     enabled: _canZoomOut,
@@ -643,61 +690,66 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
 
     return Scaffold(
       appBar: _buildEditorAppBar(width),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            width < 480 ? 8 : 16,
-            width < 480 ? 8 : 16,
-            width < 480 ? 8 : 16,
-            0,
-          ),
-          child: ListenableBuilder(
-            listenable: StitchDisplaySettingsService.instance,
-            builder: (context, _) {
-              final displaySettings = StitchDisplaySettingsService.instance;
-              final preferred = displaySettings.displayMode;
-              final effectiveMode = _effectiveSelectorMode(
-                preferred: preferred,
-                width: width,
-                height: height,
-              );
+      body: Focus(
+        focusNode: _shortcutFocusNode,
+        autofocus: true,
+        onKeyEvent: _handleShortcutKey,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              width < 480 ? 8 : 16,
+              width < 480 ? 8 : 16,
+              width < 480 ? 8 : 16,
+              0,
+            ),
+            child: ListenableBuilder(
+              listenable: StitchDisplaySettingsService.instance,
+              builder: (context, _) {
+                final displaySettings = StitchDisplaySettingsService.instance;
+                final preferred = displaySettings.displayMode;
+                final effectiveMode = _effectiveSelectorMode(
+                  preferred: preferred,
+                  width: width,
+                  height: height,
+                );
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: PatternCanvas(
-                      rows: _rows,
-                      columns: _columns,
-                      grid: _grid,
-                      definitionsByStorageIndex: _definitionsByStorageIndex,
-                      cellSize: PatternEditorPage.cellSize,
-                      rowNumberWidth: PatternEditorPage.rowNumberWidth,
-                      columnNumberHeight: PatternEditorPage.columnNumberHeight,
-                      theme: Theme.of(context),
-                      cellSymbolScale: displaySettings.cellSymbolScaleValue,
-                      zoom: _zoom,
-                      onCellEdit: _onCellEdit,
-                      onEditStart: _startEditing,
-                      onEditEnd: _finishEditing,
-                      onZoomIn: _zoomIn,
-                      onZoomOut: _zoomOut,
+                return Column(
+                  children: [
+                    Expanded(
+                      child: PatternCanvas(
+                        rows: _rows,
+                        columns: _columns,
+                        grid: _grid,
+                        definitionsByStorageIndex: _definitionsByStorageIndex,
+                        cellSize: PatternEditorPage.cellSize,
+                        rowNumberWidth: PatternEditorPage.rowNumberWidth,
+                        columnNumberHeight: PatternEditorPage.columnNumberHeight,
+                        theme: Theme.of(context),
+                        cellSymbolScale: displaySettings.cellSymbolScaleValue,
+                        zoom: _zoom,
+                        onCellEdit: _onCellEdit,
+                        onEditStart: _startEditing,
+                        onEditEnd: _finishEditing,
+                        onZoomIn: _zoomIn,
+                        onZoomOut: _zoomOut,
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      0,
-                      width < 480 ? 8 : 12,
-                      0,
-                      width < 480 ? 8 : 16,
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        0,
+                        width < 480 ? 8 : 12,
+                        0,
+                        width < 480 ? 8 : 16,
+                      ),
+                      child: _buildSymbolSelectorArea(
+                        maxHeight: selectorMaxHeight,
+                        displayMode: effectiveMode,
+                      ),
                     ),
-                    child: _buildSymbolSelectorArea(
-                      maxHeight: selectorMaxHeight,
-                      displayMode: effectiveMode,
-                    ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -706,6 +758,7 @@ class _PatternEditorPageState extends State<PatternEditorPage> {
 }
 
 enum _EditorAppBarAction {
+  stitchSettings,
   zoomOut,
   zoomReset,
   zoomIn,

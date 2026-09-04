@@ -6,8 +6,10 @@ import '../models/stitch_symbol_type.dart';
 import '../services/stitch_display_settings_service.dart';
 import '../services/stitch_settings_service.dart';
 import '../painters/stitch_symbol/stitch_symbol_display_scale.dart';
+import '../utils/stitch_shortcut_key.dart';
+import '../widgets/cell_background_color_picker_dialog.dart';
+import '../widgets/stitch_shortcut_key_picker_dialog.dart';
 import '../widgets/stitch_symbol_label.dart';
-
 // 編み記号の名称・表示記号を編集する画面
 class StitchSettingsPage extends StatefulWidget {
   const StitchSettingsPage({super.key});
@@ -158,6 +160,178 @@ class _StitchSettingsPageState extends State<StitchSettingsPage> {
     });
 
     await _saveDefinitions();
+  }
+
+  Future<void> _pickCellBackgroundColor(StitchDefinition definition) async {
+    if (definition.system) {
+      return;
+    }
+
+    final result = await showCellBackgroundColorPickerDialog(
+      context: context,
+      initialColor: definition.cellBackgroundColor,
+    );
+
+    if (!mounted ||
+        result == null ||
+        result is CellBackgroundColorPickerCancelled) {
+      return;
+    }
+
+    final selected = (result as CellBackgroundColorPickerSelected).colorArgb;
+    if (selected == definition.cellBackgroundColor) {
+      return;
+    }
+    setState(() {
+      final index = _definitions.indexWhere((item) => item.id == definition.id);
+      if (index >= 0) {
+        _definitions[index] = definition.copyWith(
+          cellBackgroundColor: selected,
+        );
+      }
+    });
+
+    await _saveDefinitions();
+  }
+
+  Future<void> _pickShortcutKey(StitchDefinition definition) async {
+    if (definition.system) {
+      return;
+    }
+
+    final result = await showStitchShortcutKeyPickerDialog(
+      context: context,
+      initialShortcutKey: definition.shortcutKey,
+    );
+
+    if (!mounted ||
+        result == null ||
+        result is StitchShortcutKeyPickerCancelled) {
+      return;
+    }
+
+    final selected =
+        (result as StitchShortcutKeyPickerSelected).shortcutKey;
+    final normalized = StitchShortcutKey.normalize(selected);
+    if (normalized != null) {
+      final duplicate = StitchShortcutKey.findDuplicateOwner(
+        definitions: _definitions,
+        shortcutKey: normalized,
+        excludeDefinitionId: definition.id,
+      );
+      if (duplicate != null) {
+        _showMessage('キー $normalized は『${duplicate.name}』で使用されています');
+        return;
+      }
+    }
+
+    if (normalized == definition.shortcutKey) {
+      return;
+    }
+
+    setState(() {
+      final index = _definitions.indexWhere((item) => item.id == definition.id);
+      if (index >= 0) {
+        _definitions[index] = definition.copyWith(shortcutKey: normalized);
+      }
+    });
+
+    await _saveDefinitions();
+  }
+
+  Widget _buildShortcutControl(
+    StitchDefinition definition,
+    Color foreground,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final display = definition.shortcutKey ?? '－';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'キー',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: foreground,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _pickShortcutKey(definition),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 40,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Text(
+                display,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorControl(
+    StitchDefinition definition,
+    Color foreground,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasColor = definition.cellBackgroundColor != null;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '色',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: foreground,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _pickCellBackgroundColor(definition),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: hasColor
+                    ? Color(definition.cellBackgroundColor!)
+                    : colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: hasColor
+                      ? colorScheme.outline
+                      : colorScheme.outlineVariant,
+                ),
+              ),
+              child: hasColor
+                  ? null
+                  : Icon(
+                      Icons.format_color_reset_outlined,
+                      size: 18,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   // 新しい編み記号を追加する
@@ -484,6 +658,11 @@ class _StitchSettingsPageState extends State<StitchSettingsPage> {
                       minHeight: 36,
                     ),
                   ),
+                  const SizedBox(width: 4),
+                  _buildColorControl(definition, foreground),
+                  const SizedBox(width: 8),
+                  _buildShortcutControl(definition, foreground),
+                  const SizedBox(width: 8),
                   Switch(
                     value: definition.enabled,
                     onChanged: (value) => _setEnabled(definition, value),

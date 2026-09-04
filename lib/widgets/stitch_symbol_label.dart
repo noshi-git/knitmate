@@ -20,6 +20,7 @@ class StitchSymbolLabel extends StatelessWidget {
     this.nameStyle,
     this.spacing = 6,
     this.maxNameWidth,
+    this.wrapName = false,
   });
 
   final StitchDefinition definition;
@@ -32,6 +33,9 @@ class StitchSymbolLabel extends StatelessWidget {
 
   /// 名前の折り返し上限。null のときは画面幅の約28%を使う
   final double? maxNameWidth;
+
+  /// true のとき maxNameWidth 内で複数行折り返し（編み記号選択ボタン向け）
+  final bool wrapName;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +99,34 @@ class StitchSymbolLabel extends StatelessWidget {
     final annotationStyle = style.copyWith(
       fontSize: (style.fontSize ?? 12) * 0.92,
     );
+
+    if (wrapName) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: width),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              parts.mainName,
+              textAlign: TextAlign.center,
+              style: style,
+              maxLines: 3,
+              softWrap: true,
+            ),
+            if (parts.annotation != null) ...[
+              const SizedBox(height: 1),
+              Text(
+                parts.annotation!,
+                textAlign: TextAlign.center,
+                style: annotationStyle,
+                maxLines: 2,
+                softWrap: true,
+              ),
+            ],
+          ],
+        ),
+      );
+    }
 
     // Always: mainName on one line, annotation on the next. No mid-word wrap.
     return ConstrainedBox(

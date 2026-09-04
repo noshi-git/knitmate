@@ -7,7 +7,11 @@ class StitchDefinition {
     required this.enabled,
     required this.system,
     required this.storageIndex,
+    this.cellBackgroundColor,
+    this.shortcutKey,
   });
+
+  static const Object _unset = Object();
 
   // 永続ID（例: empty, single_crochet）
   final String id;
@@ -26,6 +30,12 @@ class StitchDefinition {
 
   // 作品JSONに保存する永続番号（旧 StitchSymbol.index と互換）
   final int storageIndex;
+
+  // セル背景色（0xAARRGGBB）。null は従来どおり背景なし
+  final int? cellBackgroundColor;
+
+  // 編み図での選択用ショートカットキー（例: 1, A, F5）。null は未設定
+  final String? shortcutKey;
 
   // 初期記号の storageIndex（既存作品との互換のため固定）
   static const int emptyStorageIndex = 0;
@@ -72,7 +82,7 @@ class StitchDefinition {
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final json = <String, dynamic>{
       'id': id,
       'name': name,
       'symbol': symbol,
@@ -80,6 +90,13 @@ class StitchDefinition {
       'system': system,
       'storageIndex': storageIndex,
     };
+    if (cellBackgroundColor != null) {
+      json['cellBackgroundColor'] = cellBackgroundColor;
+    }
+    if (shortcutKey != null) {
+      json['shortcutKey'] = shortcutKey;
+    }
+    return json;
   }
 
   factory StitchDefinition.fromJson(Map<String, dynamic> json) {
@@ -91,6 +108,8 @@ class StitchDefinition {
       system: json['system'] as bool,
       // 旧形式（storageIndex なし）は -1 として読み込み、後で移行する
       storageIndex: json['storageIndex'] as int? ?? -1,
+      cellBackgroundColor: json['cellBackgroundColor'] as int?,
+      shortcutKey: json['shortcutKey'] as String?,
     );
   }
 
@@ -101,6 +120,8 @@ class StitchDefinition {
     bool? enabled,
     bool? system,
     int? storageIndex,
+    Object? cellBackgroundColor = _unset,
+    Object? shortcutKey = _unset,
   }) {
     return StitchDefinition(
       id: id ?? this.id,
@@ -109,6 +130,12 @@ class StitchDefinition {
       enabled: enabled ?? this.enabled,
       system: system ?? this.system,
       storageIndex: storageIndex ?? this.storageIndex,
+      cellBackgroundColor: identical(cellBackgroundColor, _unset)
+          ? this.cellBackgroundColor
+          : cellBackgroundColor as int?,
+      shortcutKey: identical(shortcutKey, _unset)
+          ? this.shortcutKey
+          : shortcutKey as String?,
     );
   }
 }

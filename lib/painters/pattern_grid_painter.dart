@@ -39,7 +39,19 @@ class PatternGridPainter extends CustomPainter {
         theme.textTheme.bodyLarge ?? const TextStyle(fontSize: 16);
     final symbolColor = theme.colorScheme.onSurface;
 
-    // 横罫線と編み記号（上から rows → 1 の順）
+    // 1. セル背景色（記号・罫線より下）
+    for (var displayIndex = 0; displayIndex < rows; displayIndex++) {
+      final row = rows - 1 - displayIndex;
+      final y = displayIndex * cellSize;
+
+      for (var column = 0; column < columns; column++) {
+        final x = column * cellSize;
+        final cellRect = Rect.fromLTWH(x, y, cellSize, cellSize);
+        _paintCellBackground(canvas, grid[row][column], cellRect);
+      }
+    }
+
+    // 2. 横罫線と編み記号（上から rows → 1 の順）
     for (var displayIndex = 0; displayIndex < rows; displayIndex++) {
       final row = rows - 1 - displayIndex;
       final y = displayIndex * cellSize;
@@ -79,6 +91,28 @@ class PatternGridPainter extends CustomPainter {
         gridPaint,
       );
     }
+  }
+
+  void _paintCellBackground(
+    Canvas canvas,
+    int storageIndex,
+    Rect cellRect,
+  ) {
+    if (storageIndex == StitchDefinition.emptyStorageIndex) {
+      return;
+    }
+
+    final definition = definitionsByStorageIndex[storageIndex];
+    final backgroundArgb = definition?.cellBackgroundColor;
+    if (backgroundArgb == null) {
+      return;
+    }
+
+    final fillPaint = Paint()
+      ..color = Color(backgroundArgb)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawRect(cellRect, fillPaint);
   }
 
   // storageIndex → Definition → id → Type → Painter
