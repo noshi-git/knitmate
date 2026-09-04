@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../models/symbol_display_scale.dart';
 import '../services/stitch_display_settings_service.dart';
@@ -93,13 +94,33 @@ class SettingsPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Card(
-                child: ListTile(
-                  title: Text('アプリについて'),
-                  subtitle: Text('KnitMate Version 3.0'),
-                ),
+                child: _AppAboutTile(),
               ),
             ],
           );
+        },
+      ),
+    );
+  }
+}
+
+class _AppAboutTile extends StatelessWidget {
+  const _AppAboutTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: const Text('アプリについて'),
+      subtitle: FutureBuilder<PackageInfo>(
+        future: PackageInfo.fromPlatform(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Text('KnitMate');
+          }
+          if (!snapshot.hasData) {
+            return const Text('KnitMate');
+          }
+          return Text('KnitMate Version ${snapshot.data!.version}');
         },
       ),
     );

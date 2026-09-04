@@ -7,7 +7,7 @@
 ;   3. 出力: installer\Output\KnitMate_Setup.exe
 
 #define MyAppName "KnitMate"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "4.1.0"
 #define MyAppPublisher "KnitMate"
 #define MyAppExeName "KnitMate.exe"
 #define BuildOutputDir "..\build\windows\x64\runner\Release"
@@ -20,7 +20,7 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\KnitMate
 DefaultGroupName=KnitMate
-OutputBaseFilename=KnitMate_Setup
+OutputBaseFilename=KnitMate_Setup_4.1.0
 OutputDir=Output
 Compression=lzma
 SolidCompression=yes
